@@ -13,6 +13,7 @@ import Progress from './pages/Progress'
 import Alarms from './pages/Alarms'
 import CurrentAffairs from './pages/CurrentAffairs'
 import Profile from './pages/Profile'
+import Landing from './pages/Landing'
 import { LogOut, User } from 'lucide-react'
 
 const pageTitles = {
@@ -257,6 +258,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route element={<AppLayout />}>
