@@ -30,6 +30,7 @@ export default function Profile() {
   const [firstName, setFirstName] = useState(meta.full_name?.split(' ')[0] || '')
   const [lastName, setLastName] = useState(meta.full_name?.split(' ').slice(1).join(' ') || '')
   const [bio, setBio] = useState(meta.bio || '')
+  const [phone, setPhone] = useState(meta.phone || '')
   const [saving, setSaving] = useState(false)
   const [profileMsg, setProfileMsg] = useState(null)
 
@@ -148,12 +149,18 @@ export default function Profile() {
     e.preventDefault()
     setSaving(true)
     setProfileMsg(null)
+    // Update auth metadata
     const { error } = await supabase.auth.updateUser({
       data: {
         full_name: [firstName, lastName].filter(Boolean).join(' '),
         bio: bio,
+        phone: phone,
       }
     })
+    // Also update phone in profiles table
+    if (!error && user) {
+      await supabase.from('profiles').update({ phone }).eq('id', user.id)
+    }
     if (error) {
       setProfileMsg({ type: 'error', text: error.message })
     } else {
@@ -498,6 +505,33 @@ export default function Profile() {
                 }}>
                   <Mail size={14} color="#94a3b8" />
                   {email}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>Phone Number</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                  <span style={{
+                    padding: '10px 10px 10px 12px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRight: 'none',
+                    borderRadius: '10px 0 0 10px',
+                    color: '#64748b',
+                    fontSize: 14,
+                    whiteSpace: 'nowrap',
+                  }}>+91</span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10)
+                      setPhone(val)
+                    }}
+                    placeholder="10-digit mobile number"
+                    style={{ ...inputStyle, borderRadius: '0 10px 10px 0' }}
+                    onFocus={e => { e.target.style.borderColor = '#14b8a6'; e.target.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.08)' }}
+                    onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }}
+                  />
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>

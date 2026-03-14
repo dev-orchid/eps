@@ -75,11 +75,11 @@ export function AuthProvider({ children }) {
     await fetchProfile(currentUserId.current)
   }, [fetchProfile])
 
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email, password, fullName, phone) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } }
+      options: { data: { full_name: fullName, phone: phone } }
     })
     return { data, error }
   }

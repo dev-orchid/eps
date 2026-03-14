@@ -56,6 +56,7 @@ export default function SignUp() {
   const { signUp } = useAuth()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -75,7 +76,7 @@ export default function SignUp() {
       return
     }
     setLoading(true)
-    const { error: err } = await signUp(email, password, fullName)
+    const { error: err } = await signUp(email, password, fullName, phone)
     if (err) {
       setError(err.message)
       setLoading(false)
@@ -253,6 +254,36 @@ export default function SignUp() {
                 onFocus={e => e.target.style.borderColor = TEAL}
                 onBlur={e => e.target.style.borderColor = BORDER}
               />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Phone Number</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                <span style={{
+                  padding: '12px 10px 12px 14px',
+                  background: '#f8fafc',
+                  border: `1px solid ${BORDER}`,
+                  borderRight: 'none',
+                  borderRadius: '10px 0 0 10px',
+                  color: TEXT_MUTED,
+                  fontSize: 14,
+                  fontFamily: 'DM Sans, sans-serif',
+                  whiteSpace: 'nowrap',
+                }}>+91</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10)
+                    setPhone(val)
+                  }}
+                  placeholder="10-digit mobile number"
+                  required
+                  style={{ ...inputStyle, borderRadius: '0 10px 10px 0' }}
+                  onFocus={e => e.target.style.borderColor = TEAL}
+                  onBlur={e => e.target.style.borderColor = BORDER}
+                />
+              </div>
             </div>
 
             <div>
