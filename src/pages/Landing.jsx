@@ -206,8 +206,7 @@ function Navbar({ onSignIn, onSignUp }) {
   )
 }
 
-function FAQItem({ q, a }) {
-  const [open, setOpen] = useState(false)
+function FAQItem({ q, a, open, onToggle }) {
   return (
     <div style={{
       border: `1px solid ${open ? TEAL : BORDER}`,
@@ -216,7 +215,7 @@ function FAQItem({ q, a }) {
       transition: 'border-color 0.2s',
     }}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         style={{
           width: '100%', padding: '18px 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -245,6 +244,7 @@ function FAQItem({ q, a }) {
 export default function Landing() {
   const navigate = useNavigate()
   const [billingCycle, setBillingCycle] = useState('yearly')
+  const [openFaq, setOpenFaq] = useState(null)
 
   const goSignIn = () => navigate('/signin')
   const goSignUp = () => navigate('/signup')
@@ -659,7 +659,15 @@ export default function Landing() {
             Common questions
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {FAQS.map(({ q, a }) => <FAQItem key={q} q={q} a={a} />)}
+            {FAQS.map(({ q, a }, i) => (
+              <FAQItem
+                key={q}
+                q={q}
+                a={a}
+                open={openFaq === i}
+                onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+              />
+            ))}
           </div>
         </div>
       </section>
