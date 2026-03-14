@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield, CreditCard } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield, CreditCard, User, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const userTabs = [
@@ -21,7 +21,7 @@ const adminTabs = [
 function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, profile, isAdmin } = useAuth()
+  const { user, profile, isAdmin, signOut } = useAuth()
 
   const fullName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'User'
   const initials = fullName
@@ -33,6 +33,11 @@ function Sidebar() {
   const roleName = profile?.role || 'Student'
 
   const tabs = isAdmin ? [...userTabs, ...adminTabs] : userTabs
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/signin')
+  }
 
   return (
     <nav className="sidebar-desktop" style={{
@@ -119,20 +124,82 @@ function Sidebar() {
         })}
       </div>
 
-      <div
-        onClick={() => navigate('/profile')}
-        style={{
-          padding: '16px 16px',
-          borderTop: '1px solid #e2e8f0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          cursor: 'pointer',
-          transition: 'background 0.2s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-      >
+      {/* Bottom menu items */}
+      <div style={{
+        borderTop: '1px solid #e2e8f0',
+        padding: '8px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+      }}>
+        {[
+          { path: '/profile', label: 'My Profile', icon: User },
+          { path: '/plans', label: 'Billing & Plan', icon: CreditCard },
+        ].map(({ path, label, icon: Icon }) => {
+          const active = location.pathname === path
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                width: '100%',
+                padding: '10px 14px',
+                border: 'none',
+                borderRadius: 10,
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: active ? 600 : 500,
+                color: active ? '#0d9488' : '#64748b',
+                background: active ? '#e0f7f0' : 'transparent',
+                transition: 'all 0.15s ease',
+                textAlign: 'left',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#f1f5f9' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? '#e0f7f0' : 'transparent' }}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </button>
+          )
+        })}
+
+        <button
+          onClick={handleSignOut}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            width: '100%',
+            padding: '10px 14px',
+            border: 'none',
+            borderRadius: 10,
+            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#ef4444',
+            background: 'transparent',
+            transition: 'all 0.15s ease',
+            textAlign: 'left',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
+      </div>
+
+      {/* User info at very bottom */}
+      <div style={{
+        padding: '12px 16px',
+        borderTop: '1px solid #e2e8f0',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}>
         <div style={{
           width: 34,
           height: 34,
@@ -148,7 +215,7 @@ function Sidebar() {
         }}>
           {initials}
         </div>
-        <div style={{ overflow: 'hidden' }}>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
           <p style={{
             fontSize: 13,
             fontWeight: 600,
