@@ -83,7 +83,7 @@ const TESTIMONIALS = [
   },
   {
     name: 'Ananya Reddy',
-    role: 'UPSC CSE 2024 (Selected)',
+    role: 'UPSC CSE 2025 Aspirant',
     text: 'Used ExamPrep throughout my preparation. The exam countdown and task planner kept me on track during Mains.',
     avatar: 'AR',
   },

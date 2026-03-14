@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield, CreditCard } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const userTabs = [
@@ -15,6 +15,7 @@ const userTabs = [
 const adminTabs = [
   { path: '/admin/users', label: 'Users', icon: Users },
   { path: '/admin/roles', label: 'Roles', icon: Shield },
+  { path: '/admin/payments', label: 'Payments', icon: CreditCard },
 ]
 
 function Sidebar() {

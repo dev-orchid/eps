@@ -17,6 +17,8 @@ import Profile from './pages/Profile'
 import Landing from './pages/Landing'
 import UserManagement from './pages/UserManagement'
 import RoleManagement from './pages/RoleManagement'
+import Plans from './pages/Plans'
+import PaymentSettings from './pages/PaymentSettings'
 import { LogOut, User } from 'lucide-react'
 
 const pageTitles = {
@@ -31,6 +33,8 @@ const pageTitles = {
   '/profile': 'Profile',
   '/admin/users': 'User Management',
   '/admin/roles': 'Role Management',
+  '/admin/payments': 'Payment Settings',
+  '/plans': 'Plans',
 }
 
 function TopHeader() {
@@ -292,6 +296,8 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/roles" element={<RoleManagement />} />
+            <Route path="/admin/payments" element={<PaymentSettings />} />
+            <Route path="/plans" element={<Plans />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

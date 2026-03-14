@@ -6,17 +6,89 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import CountdownBadge from '../components/CountdownBadge'
 import EmptyState from '../components/EmptyState'
 import PriorityBadge from '../components/PriorityBadge'
-import { GraduationCap, CheckSquare, Clock, Target, TrendingUp, BookOpen, ArrowRight, CalendarDays } from 'lucide-react'
+import { GraduationCap, CheckSquare, Clock, Target, TrendingUp, BookOpen, ArrowRight, CalendarDays, Crown, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
+function TrialBanner({ profile, navigate }) {
+  if (!profile || profile.plan === 'Premium') return null
+
+  const now = new Date(); now.setHours(0, 0, 0, 0)
+  const trialEnd = profile.trial_end ? new Date(profile.trial_end) : null
+  const daysLeft = trialEnd ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)) : 0
+  const isExpired = !trialEnd || daysLeft <= 0
+  const isUrgent = daysLeft <= 3 && daysLeft > 0
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '14px 20px',
+      borderRadius: 12,
+      background: isExpired
+        ? 'linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)'
+        : isUrgent
+          ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+          : 'linear-gradient(135deg, #f0fdfa 0%, #e0f7f0 100%)',
+      border: `1px solid ${isExpired ? '#fecaca' : isUrgent ? '#fde68a' : '#99f6e4'}`,
+      marginBottom: 20,
+      flexWrap: 'wrap',
+      gap: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: isExpired ? '#fee2e2' : isUrgent ? '#fef3c7' : '#ccfbf1',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {isExpired ? <Crown size={18} color="#dc2626" /> : <Zap size={18} color={isUrgent ? '#f59e0b' : '#14b8a6'} />}
+        </div>
+        <div>
+          <p style={{
+            fontSize: 14, fontWeight: 700, margin: 0,
+            color: isExpired ? '#dc2626' : isUrgent ? '#92400e' : '#0d9488',
+          }}>
+            {isExpired ? 'Your trial has expired' : `${daysLeft} Day${daysLeft !== 1 ? 's' : ''} Left in Trial`}
+          </p>
+          <p style={{
+            fontSize: 13, margin: '2px 0 0', fontWeight: 500,
+            color: isExpired ? '#991b1b' : isUrgent ? '#78350f' : '#115e59',
+            opacity: 0.8,
+          }}>
+            {isExpired
+              ? 'Upgrade now to continue using all features.'
+              : 'Explore all features during your trial. Upgrade anytime to unlock more.'}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={() => navigate('/plans')}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 18px', borderRadius: 10, border: 'none',
+          background: isExpired ? '#dc2626' : '#14b8a6',
+          color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          transition: 'background 0.15s', flexShrink: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = isExpired ? '#b91c1c' : '#0d9488'}
+        onMouseLeave={e => e.currentTarget.style.background = isExpired ? '#dc2626' : '#14b8a6'}
+      >
+        <Zap size={14} />
+        View Plans
+      </button>
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { exams, loading: examsLoading } = useExams()
   const { tasks, loading: tasksLoading, toggleTask } = useTasks()
   const { sessions, loading: sessionsLoading } = useStudySessions()
   const navigate = useNavigate()
 
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Student'
+  const firstName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Student'
   const today = new Date().toISOString().split('T')[0]
 
   const dateStr = new Date().toLocaleDateString('en-US', {
@@ -68,6 +140,9 @@ export default function Dashboard() {
           {dateStr}
         </p>
       </div>
+
+      {/* Trial notification banner */}
+      <TrialBanner profile={profile} navigate={navigate} />
 
       {/* Stat Cards */}
       <div className="dashboard-stats">
