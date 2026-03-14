@@ -197,7 +197,7 @@ export default function Plans() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div>
       {/* Back */}
       <button onClick={() => navigate('/dashboard')} style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
@@ -270,7 +270,7 @@ export default function Plans() {
       </div>
 
       {/* Plan Cards */}
-      <div className="plans-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 700, margin: '0 auto' }}>
+      <div className="plans-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         {/* Monthly */}
         <div style={{
           padding: 32, border: `1.5px solid ${billingCycle === 'monthly' ? C.teal : C.border}`,

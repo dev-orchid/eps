@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield, CreditCard, User, LogOut } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield, CreditCard, User, LogOut, ChevronUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const userTabs = [
@@ -33,6 +34,8 @@ function Sidebar() {
   const roleName = profile?.role || 'Student'
 
   const tabs = isAdmin ? [...userTabs, ...adminTabs] : userTabs
+
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -124,117 +127,147 @@ function Sidebar() {
         })}
       </div>
 
-      {/* Bottom menu items */}
-      <div style={{
-        borderTop: '1px solid #e2e8f0',
-        padding: '8px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-      }}>
-        {[
-          { path: '/profile', label: 'My Profile', icon: User },
-          { path: '/plans', label: 'Billing & Plan', icon: CreditCard },
-        ].map(({ path, label, icon: Icon }) => {
-          const active = location.pathname === path
-          return (
+      {/* Popover menu above user info */}
+      <div style={{ position: 'relative' }}>
+        {menuOpen && (
+          <div style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: 12,
+            right: 12,
+            marginBottom: 8,
+            background: '#ffffff',
+            borderRadius: 14,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 -4px 24px rgba(0,0,0,0.10), 0 -1px 6px rgba(0,0,0,0.04)',
+            padding: '6px',
+            zIndex: 60,
+            animation: 'sidebarMenuFadeIn 0.15s ease-out',
+          }}>
+            {[
+              { path: '/profile', label: 'My Profile', icon: User },
+              { path: '/plans', label: 'Billing & Plan', icon: CreditCard },
+            ].map(({ path, label, icon: Icon }) => {
+              const active = location.pathname === path
+              return (
+                <button
+                  key={path}
+                  onClick={() => { navigate(path); setMenuOpen(false) }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? '#0d9488' : '#334155',
+                    background: active ? '#e0f7f0' : 'transparent',
+                    transition: 'all 0.12s ease',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#f1f5f9' }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? '#e0f7f0' : 'transparent' }}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </button>
+              )
+            })}
+
+            <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0' }} />
+
             <button
-              key={path}
-              onClick={() => navigate(path)}
+              onClick={handleSignOut}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 10,
                 width: '100%',
-                padding: '10px 14px',
+                padding: '10px 12px',
                 border: 'none',
                 borderRadius: 10,
                 cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: active ? 600 : 500,
-                color: active ? '#0d9488' : '#64748b',
-                background: active ? '#e0f7f0' : 'transparent',
-                transition: 'all 0.15s ease',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#ef4444',
+                background: 'transparent',
+                transition: 'all 0.12s ease',
                 textAlign: 'left',
               }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#f1f5f9' }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? '#e0f7f0' : 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <Icon size={20} />
-              <span>{label}</span>
+              <LogOut size={18} />
+              <span>Logout</span>
             </button>
-          )
-        })}
+          </div>
+        )}
 
-        <button
-          onClick={handleSignOut}
+        {/* User info toggle */}
+        <div
+          onClick={() => setMenuOpen(prev => !prev)}
           style={{
+            padding: '14px 16px',
+            borderTop: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
-            width: '100%',
-            padding: '10px 14px',
-            border: 'none',
-            borderRadius: 10,
+            gap: 10,
             cursor: 'pointer',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#ef4444',
-            background: 'transparent',
-            transition: 'all 0.15s ease',
-            textAlign: 'left',
+            transition: 'background 0.15s',
+            background: menuOpen ? '#f8fafc' : 'transparent',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+          onMouseLeave={e => e.currentTarget.style.background = menuOpen ? '#f8fafc' : 'transparent'}
         >
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
-
-      {/* User info at very bottom */}
-      <div style={{
-        padding: '12px 16px',
-        borderTop: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: '50%',
-          background: '#14b8a6',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 12,
-          fontWeight: 700,
-          flexShrink: 0,
-        }}>
-          {initials}
-        </div>
-        <div style={{ overflow: 'hidden', flex: 1 }}>
-          <p style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#1e293b',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            margin: 0,
+          <div style={{
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            background: '#14b8a6',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 12,
+            fontWeight: 700,
+            flexShrink: 0,
           }}>
-            {fullName}
-          </p>
-          <p style={{
-            fontSize: 11,
-            fontWeight: 500,
-            margin: 0,
-            color: isAdmin ? '#0d9488' : '#94a3b8',
-          }}>
-            {roleName}
-          </p>
+            {initials}
+          </div>
+          <div style={{ overflow: 'hidden', flex: 1 }}>
+            <p style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1e293b',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              margin: 0,
+            }}>
+              {fullName}
+            </p>
+            <p style={{
+              fontSize: 11,
+              fontWeight: 500,
+              margin: 0,
+              color: isAdmin ? '#0d9488' : '#94a3b8',
+            }}>
+              {roleName}
+            </p>
+          </div>
+          <ChevronUp
+            size={16}
+            color="#94a3b8"
+            style={{
+              flexShrink: 0,
+              transition: 'transform 0.2s',
+              transform: menuOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+            }}
+          />
         </div>
       </div>
     </nav>
@@ -298,6 +331,10 @@ export default function BottomNav() {
       <Sidebar />
       <MobileBottomNav />
       <style>{`
+        @keyframes sidebarMenuFadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (min-width: 768px) {
           .mobile-bottom-nav { display: none !important; }
         }

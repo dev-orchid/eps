@@ -109,7 +109,7 @@ export default function CurrentAffairs() {
       `Current Affairs (${gsPaper}): ${affair.category}`,
       30,
       affair.date,
-      `${affair.title}${affair.summary ? '\n\n' + affair.summary : ''}`
+      `${affair.title}${affair.summary ? '\n\n' + affair.summary : ''}${affair.source_url ? '\n\n' + affair.source_url : ''}`
     )
     await markAddedToStudy(affair.id)
   }
@@ -222,7 +222,7 @@ export default function CurrentAffairs() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ padding: '24px 0' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>

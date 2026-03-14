@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStudySessions } from '../hooks/useStudySessions';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
-import { Plus, Trash2, BookOpen, Clock, X } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Clock, X, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 function formatDuration(minutes) {
   const hrs = Math.floor(minutes / 60);
@@ -32,6 +32,7 @@ export default function StudyLog() {
   const [date, setDate] = useState(getTodayString());
   const [notes, setNotes] = useState('');
   const [hoveredDelete, setHoveredDelete] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const todayStr = getTodayString();
   const todayMinutes = (sessions || [])
@@ -77,7 +78,7 @@ export default function StudyLog() {
 
   return (
     <div style={{ color: '#1e293b', paddingTop: 20, paddingBottom: 80 }}>
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#1e293b' }}>Study Log</h1>
@@ -247,58 +248,140 @@ export default function StudyLog() {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {sortedSessions.map((session) => (
-              <div
-                key={session.id}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 12,
-                  padding: '16px 18px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b', marginBottom: 4 }}>
-                    {session.subject}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#475569', marginBottom: session.notes ? 6 : 0 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock size={14} color="#14b8a6" />
-                      {formatDuration(session.duration_minutes)}
-                    </span>
-                    <span>{session.date}</span>
-                  </div>
-                  {session.notes && (
-                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>
-                      {session.notes}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => deleteSession(session.id)}
-                  onMouseEnter={() => setHoveredDelete(session.id)}
-                  onMouseLeave={() => setHoveredDelete(null)}
+            {sortedSessions.map((session) => {
+              const isExpanded = expandedId === session.id
+              const hasNotes = !!session.notes
+              const isCurrentAffairs = session.subject?.startsWith('Current Affairs')
+              const isLongNotes = hasNotes && session.notes.length > 100
+
+              return (
+                <div
+                  key={session.id}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: hoveredDelete === session.id ? '#ef4444' : '#64748b',
-                    cursor: 'pointer',
-                    padding: 6,
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                    transition: 'color 0.15s ease',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                   }}
                 >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
+                  <div style={{
+                    padding: '16px 18px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4,
+                      }}>
+                        {isCurrentAffairs && (
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, color: '#14b8a6',
+                            background: '#e0f7f0', padding: '2px 8px', borderRadius: 6,
+                            flexShrink: 0,
+                          }}>
+                            Current Affairs
+                          </span>
+                        )}
+                        <span style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>
+                          {isCurrentAffairs
+                            ? session.subject.replace(/^Current Affairs \([^)]+\): /, '')
+                            : session.subject}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#475569' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Clock size={14} color="#14b8a6" />
+                          {formatDuration(session.duration_minutes)}
+                        </span>
+                        <span>{session.date}</span>
+                      </div>
+                      {hasNotes && !isExpanded && (
+                        <div style={{
+                          fontSize: 13, color: '#94a3b8', marginTop: 8, lineHeight: 1.5,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {session.notes.split('\n')[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                      {hasNotes && isLongNotes && (
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : session.id)}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 6, display: 'flex', alignItems: 'center',
+                            color: '#14b8a6', transition: 'color 0.15s',
+                          }}
+                          title={isExpanded ? 'Collapse' : 'Read more'}
+                        >
+                          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteSession(session.id)}
+                        onMouseEnter={() => setHoveredDelete(session.id)}
+                        onMouseLeave={() => setHoveredDelete(null)}
+                        style={{
+                          background: 'none', border: 'none',
+                          color: hoveredDelete === session.id ? '#ef4444' : '#64748b',
+                          cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center',
+                          transition: 'color 0.15s ease',
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded notes section */}
+                  {isExpanded && hasNotes && (() => {
+                    const urlMatch = session.notes.match(/https?:\/\/[^\s]+/)
+                    const articleUrl = urlMatch ? urlMatch[0] : null
+                    const notesText = articleUrl
+                      ? session.notes.replace(articleUrl, '').trimEnd()
+                      : session.notes
+
+                    return (
+                      <div style={{
+                        padding: '0 18px 16px',
+                        borderTop: '1px solid #f1f5f9',
+                        marginTop: 0,
+                      }}>
+                        <div style={{
+                          fontSize: 14, color: '#334155', lineHeight: 1.7,
+                          paddingTop: 14, whiteSpace: 'pre-line',
+                        }}>
+                          {notesText}
+                        </div>
+                        {articleUrl && (
+                          <a
+                            href={articleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 6,
+                              marginTop: 12, padding: '8px 16px', borderRadius: 8,
+                              background: '#e0f7f0', color: '#0d9488',
+                              fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#ccfbf1'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#e0f7f0'}
+                          >
+                            <ExternalLink size={14} />
+                            Read full article
+                          </a>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
