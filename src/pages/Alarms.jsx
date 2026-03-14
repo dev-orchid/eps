@@ -120,11 +120,18 @@ export default function Alarms() {
     return () => clearTimeout(timeout);
   }, []);
 
-  // Alarm checker - every 5 seconds
+  // Alarm checker - every second for reliability
   useEffect(() => {
+    let lastCheckedMinute = '';
+
     function checkAlarms() {
       const now = new Date();
       const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      // Only process once per minute change to avoid re-firing
+      if (currentHHMM === lastCheckedMinute) return;
+      lastCheckedMinute = currentHHMM;
+
       const currentDay = DAY_NAME_MAP[now.getDay()];
 
       alarmsRef.current.forEach((alarm) => {
@@ -161,8 +168,21 @@ export default function Alarms() {
     }
 
     checkAlarms();
-    const interval = setInterval(checkAlarms, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkAlarms, 1000);
+
+    // Also check when tab becomes visible again (browser throttles background timers)
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        lastCheckedMinute = ''; // Force re-check
+        checkAlarms();
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   const dismissAlarm = useCallback(() => {

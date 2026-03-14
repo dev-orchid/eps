@@ -81,7 +81,7 @@ export default function SignIn() {
     }}>
       {/* Left branding panel */}
       <div style={{
-        width: '60%',
+        width: '50%',
         background: 'linear-gradient(135deg, #e0f7f0 0%, #f0fdf4 50%, #e0f7f0 100%)',
         display: 'flex',
         flexDirection: 'column',
@@ -157,7 +157,7 @@ export default function SignIn() {
 
       {/* Right form panel */}
       <div style={{
-        width: '40%',
+        width: '50%',
         minWidth: 0,
         background: '#ffffff',
         display: 'flex',

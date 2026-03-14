@@ -362,7 +362,7 @@ export default function Landing() {
               <div style={{ display: 'flex', gap: 2 }}>
                 {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />)}
               </div>
-              <p style={{ fontSize: 12, color: MUTED, margin: '2px 0 0' }}>Trusted by 2,000+ aspirants</p>
+              <p style={{ fontSize: 12, color: MUTED, margin: '2px 0 0' }}>Trusted by 1,00+ aspirants</p>
             </div>
           </div>
         </div>
