@@ -115,17 +115,27 @@ export default function Plans() {
     if (isSubscription) {
       // Create subscription via edge function, then open Razorpay checkout
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        const res = await supabase.functions.invoke('create-subscription', {
+        const { data, error: fnError } = await supabase.functions.invoke('create-subscription', {
           body: { plan },
         })
-        if (res.error || res.data?.error) {
-          setPayError(res.data?.error || res.error?.message || 'Failed to create subscription. Please try again.')
+        // supabase.functions.invoke returns error for non-2xx, but data may still have our JSON
+        const result = data || {}
+        if (fnError || result.error) {
+          const msg = result.error || fnError?.message || 'Failed to create subscription.'
+          console.error('Subscription error:', fnError, result)
+          setPayError(msg)
           setProcessing(false)
           return
         }
-        options.subscription_id = res.data.subscription_id
+        if (!result.subscription_id) {
+          console.error('No subscription_id in response:', result)
+          setPayError('Invalid response from server. Please try again.')
+          setProcessing(false)
+          return
+        }
+        options.subscription_id = result.subscription_id
       } catch (err) {
+        console.error('Subscription catch:', err)
         setPayError('Failed to create subscription. Please try again.')
         setProcessing(false)
         return
