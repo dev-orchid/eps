@@ -16,10 +16,9 @@ serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // Service role client for reading payment_settings (bypasses RLS)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
-    // Verify the user using their JWT
+    // Verify the user
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Not authenticated' }), {
@@ -27,7 +26,6 @@ serve(async (req: Request) => {
       })
     }
 
-    // Create a client with the user's JWT to verify identity
     const supabaseUser = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     })
@@ -47,7 +45,7 @@ serve(async (req: Request) => {
       })
     }
 
-    // Fetch payment settings using admin client
+    // Fetch payment settings
     const { data: settingsData, error: settingsError } = await supabaseAdmin
       .from('payment_settings')
       .select('key, value')
@@ -79,9 +77,78 @@ serve(async (req: Request) => {
       })
     }
 
-    // Create subscription via Razorpay API
-    const totalCount = plan === 'monthly' ? 12 : 5
     const auth = btoa(`${keyId}:${keySecret}`)
+
+    // Fetch user profile for customer details
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('email, full_name, phone')
+      .eq('id', user.id)
+      .single()
+
+    const customerEmail = profile?.email || user.email || ''
+    const customerName = profile?.full_name || ''
+    const customerPhone = profile?.phone || ''
+
+    // Step 1: Create or find a Razorpay customer
+    let customerId = ''
+
+    // Check if customer already exists by email
+    const customerSearchRes = await fetch(
+      `https://api.razorpay.com/v1/customers?email=${encodeURIComponent(customerEmail)}`,
+      { headers: { 'Authorization': `Basic ${auth}` } }
+    )
+
+    if (customerSearchRes.ok) {
+      const searchBody = await customerSearchRes.json()
+      if (searchBody.items && searchBody.items.length > 0) {
+        customerId = searchBody.items[0].id
+      }
+    }
+
+    // If no existing customer, create one
+    if (!customerId) {
+      const createCustomerRes = await fetch('https://api.razorpay.com/v1/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${auth}`,
+        },
+        body: JSON.stringify({
+          name: customerName,
+          email: customerEmail,
+          contact: customerPhone,
+          notes: { user_id: user.id },
+        }),
+      })
+
+      if (createCustomerRes.ok) {
+        const customerBody = await createCustomerRes.json()
+        customerId = customerBody.id
+      } else {
+        console.error('Failed to create customer:', await createCustomerRes.text())
+      }
+    }
+
+    // Step 2: Create subscription with customer info
+    const totalCount = plan === 'monthly' ? 12 : 5
+
+    const subscriptionBody: Record<string, unknown> = {
+      plan_id: planId,
+      total_count: totalCount,
+      quantity: 1,
+      customer_notify: 1,
+      notes: {
+        user_id: user.id,
+        email: customerEmail,
+        plan: plan,
+      },
+    }
+
+    // Attach customer if we have one
+    if (customerId) {
+      subscriptionBody.customer_id = customerId
+    }
 
     const razorpayRes = await fetch('https://api.razorpay.com/v1/subscriptions', {
       method: 'POST',
@@ -89,17 +156,7 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${auth}`,
       },
-      body: JSON.stringify({
-        plan_id: planId,
-        total_count: totalCount,
-        quantity: 1,
-        customer_notify: 0,
-        notes: {
-          user_id: user.id,
-          email: user.email,
-          plan: plan,
-        },
-      }),
+      body: JSON.stringify(subscriptionBody),
     })
 
     const razorpayBody = await razorpayRes.json()
