@@ -32,7 +32,7 @@ export default function Plans() {
   const { recordPayment } = usePayments()
   const navigate = useNavigate()
   const [billingCycle, setBillingCycle] = useState('yearly')
-  const [processing, setProcessing] = useState(false)
+  const [processing, setProcessing] = useState(null) // null or 'monthly' or 'yearly'
   const [payError, setPayError] = useState(null)
   const [success, setSuccess] = useState(false)
 
@@ -58,7 +58,7 @@ export default function Plans() {
       return
     }
 
-    setProcessing(true)
+    setProcessing(plan)
 
     const amount = plan === 'monthly' ? monthlyPrice : yearlyPrice
     const planLabel = plan === 'monthly' ? 'Monthly Plan' : 'Yearly Plan'
@@ -82,7 +82,7 @@ export default function Plans() {
         .eq('id', user.id)
 
       await refreshProfile()
-      setProcessing(false)
+      setProcessing(null)
       setSuccess(true)
     }
 
@@ -96,7 +96,7 @@ export default function Plans() {
         status: 'failed',
       })
       setPayError('Payment failed. Please try again.')
-      setProcessing(false)
+      setProcessing(null)
     }
 
     const options = {
@@ -109,7 +109,7 @@ export default function Plans() {
         contact: profile?.phone || '',
       },
       theme: { color: C.teal },
-      modal: { ondismiss: () => setProcessing(false) },
+      modal: { ondismiss: () => setProcessing(null) },
     }
 
     if (isSubscription) {
@@ -118,7 +118,7 @@ export default function Plans() {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session?.access_token) {
           setPayError('Please log in again to continue.')
-          setProcessing(false)
+          setProcessing(null)
           return
         }
         const { data, error: fnError } = await supabase.functions.invoke('create-subscription', {
@@ -131,20 +131,20 @@ export default function Plans() {
           const msg = result.error || fnError?.message || 'Failed to create subscription.'
           console.error('Subscription error:', fnError, result)
           setPayError(msg)
-          setProcessing(false)
+          setProcessing(null)
           return
         }
         if (!result.subscription_id) {
           console.error('No subscription_id in response:', result)
           setPayError('Invalid response from server. Please try again.')
-          setProcessing(false)
+          setProcessing(null)
           return
         }
         options.subscription_id = result.subscription_id
       } catch (err) {
         console.error('Subscription catch:', err)
         setPayError('Failed to create subscription. Please try again.')
-        setProcessing(false)
+        setProcessing(null)
         return
       }
       options.handler = onSuccess
@@ -284,7 +284,7 @@ export default function Plans() {
           <p style={{ fontSize: 13, color: C.muted, margin: '0 0 24px' }}>Flexible monthly billing</p>
           <button
             onClick={() => handlePayment('monthly')}
-            disabled={processing || isPremium}
+            disabled={!!processing || isPremium}
             style={{
               width: '100%', padding: '12px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: processing || isPremium ? 'default' : 'pointer',
               background: billingCycle === 'monthly' && !isPremium ? C.teal : C.white,
@@ -294,7 +294,7 @@ export default function Plans() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            {processing ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CreditCard size={16} />}
+            {processing === 'monthly' ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CreditCard size={16} />}
             {isPremium ? 'Current Plan' : 'Subscribe'}
           </button>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -327,7 +327,7 @@ export default function Plans() {
           </p>
           <button
             onClick={() => handlePayment('yearly')}
-            disabled={processing || isPremium}
+            disabled={!!processing || isPremium}
             style={{
               width: '100%', padding: '12px', borderRadius: 12, fontSize: 15, fontWeight: 700,
               cursor: processing || isPremium ? 'default' : 'pointer',
@@ -337,7 +337,7 @@ export default function Plans() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            {processing ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CreditCard size={16} />}
+            {processing === 'yearly' ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CreditCard size={16} />}
             {isPremium ? 'Current Plan' : 'Subscribe'}
           </button>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
