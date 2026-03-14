@@ -20,13 +20,13 @@ export default function TrialBanner() {
   if (!profile || isAdmin || profile.plan === 'Premium') return null
   if (location.pathname === '/plans' || location.pathname === '/profile') return null
 
-  const trialEnd = profile.trial_end ? new Date(profile.trial_end) : null
-  if (!trialEnd) return null
+  if (!profile.trial_end) return null
 
   const now = new Date()
   now.setHours(0, 0, 0, 0)
-  const end = new Date(trialEnd)
-  end.setHours(0, 0, 0, 0)
+  // Parse as local date to avoid UTC timezone offset
+  const [y, m, d] = profile.trial_end.split('-').map(Number)
+  const end = new Date(y, m - 1, d)
   const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
   const isExpired = daysLeft <= 0
 
