@@ -16,14 +16,19 @@ function formatTime12(timeStr) {
 }
 
 // Generate alarm sound using Web Audio API — loops until stopped
-function playAlarmSound(audioCtxRef, intervalRef) {
+async function playAlarmSound(audioCtxRef, intervalRef) {
   stopAlarmSound(audioCtxRef, intervalRef);
 
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume context if suspended (browser autoplay policy)
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
     audioCtxRef.current = ctx;
 
     function scheduleBeeps() {
+      if (ctx.state === 'closed') return;
       // 3 beeps pattern taking ~1.5s
       for (let i = 0; i < 3; i++) {
         const t = ctx.currentTime + i * 0.4;
@@ -79,6 +84,7 @@ export default function Alarms() {
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [ringingAlarm, setRingingAlarm] = useState(null);
   const [hoveredDelete, setHoveredDelete] = useState(null);
+  const [saving, setSaving] = useState(false);
   const firedTodayRef = useRef(new Set());
   const alarmsRef = useRef(alarms);
   const audioCtxRef = useRef(null);
@@ -114,7 +120,7 @@ export default function Alarms() {
     return () => clearTimeout(timeout);
   }, []);
 
-  // Alarm checker - every 10 seconds for better accuracy
+  // Alarm checker - every 5 seconds
   useEffect(() => {
     function checkAlarms() {
       const now = new Date();
@@ -141,15 +147,21 @@ export default function Alarms() {
 
         // Browser notification
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(alarm.title || 'Alarm', {
-            body: `It's ${formatTime12(alarm.alarm_time)}`,
-          });
+          try {
+            new Notification(alarm.title || 'Alarm', {
+              body: `It's ${formatTime12(alarm.alarm_time)}`,
+              requireInteraction: true,
+              tag: `alarm-${alarm.id}`,
+            });
+          } catch (e) {
+            console.warn('Notification failed:', e);
+          }
         }
       });
     }
 
     checkAlarms();
-    const interval = setInterval(checkAlarms, 10000);
+    const interval = setInterval(checkAlarms, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -166,12 +178,14 @@ export default function Alarms() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !alarmTime) return;
+    if (!title.trim() || !alarmTime || saving) return;
+    setSaving(true);
     await addAlarm(title.trim(), alarmTime, selectedDays);
     setTitle('');
     setAlarmTime('');
     setSelectedDays([]);
     setShowForm(false);
+    setSaving(false);
   };
 
   const handleCancel = () => {
@@ -423,6 +437,7 @@ export default function Alarms() {
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 type="submit"
+                disabled={saving}
                 style={{
                   flex: 1,
                   padding: '10px 0',
@@ -432,10 +447,11 @@ export default function Alarms() {
                   borderRadius: 8,
                   fontSize: 14,
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: saving ? 'wait' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
                 }}
               >
-                Add Alarm
+                {saving ? 'Adding...' : 'Add Alarm'}
               </button>
               <button
                 type="button"
