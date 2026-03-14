@@ -113,17 +113,23 @@ export default function Plans() {
     }
 
     if (isSubscription) {
-      // Create subscription via database RPC, then open Razorpay checkout
-      const { data: rpcResult, error: rpcError } = await supabase
-        .rpc('create_razorpay_subscription', { plan_type: plan })
-
-      if (rpcError || rpcResult?.error) {
-        setPayError(rpcResult?.error || rpcError?.message || 'Failed to create subscription. Please try again.')
+      // Create subscription via edge function, then open Razorpay checkout
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await supabase.functions.invoke('create-subscription', {
+          body: { plan },
+        })
+        if (res.error || res.data?.error) {
+          setPayError(res.data?.error || res.error?.message || 'Failed to create subscription. Please try again.')
+          setProcessing(false)
+          return
+        }
+        options.subscription_id = res.data.subscription_id
+      } catch (err) {
+        setPayError('Failed to create subscription. Please try again.')
         setProcessing(false)
         return
       }
-
-      options.subscription_id = rpcResult.subscription_id
       options.handler = onSuccess
     } else {
       // One-time payment fallback
