@@ -20,7 +20,7 @@ export function useStudySessions() {
     if (err) setError(err.message)
     else setSessions(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchSessions()

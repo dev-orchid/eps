@@ -19,7 +19,7 @@ export function usePayments() {
     if (err) setError(err.message)
     else setPayments(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchPayments()

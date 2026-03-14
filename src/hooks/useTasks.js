@@ -20,7 +20,7 @@ export function useTasks() {
     if (err) setError(err.message)
     else setTasks(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchTasks()

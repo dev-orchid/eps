@@ -19,7 +19,7 @@ export function useProfiles() {
     if (err) setError(err.message)
     else setProfiles(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchProfiles()

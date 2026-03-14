@@ -9,10 +9,10 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const profileFetchedFor = useRef(null)
+  const currentUserId = useRef(null)
 
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
-    // Skip if we already fetched for this user
     if (profileFetchedFor.current === userId) return
     profileFetchedFor.current = userId
     const { data } = await supabase
@@ -29,9 +29,11 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return
       setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).then(() => {
+      const u = session?.user ?? null
+      currentUserId.current = u?.id || null
+      setUser(u)
+      if (u) {
+        fetchProfile(u.id).then(() => {
           if (mounted) setLoading(false)
         })
       } else {
@@ -41,13 +43,21 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
+      const newUserId = session?.user?.id || null
+      // Only update user state if the user actually changed
+      if (newUserId !== currentUserId.current) {
+        currentUserId.current = newUserId
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          setProfile(null)
+          profileFetchedFor.current = null
+        }
       } else {
-        setProfile(null)
-        profileFetchedFor.current = null
+        // Same user, just update session (token refresh) without triggering re-renders on user
+        setSession(session)
       }
     })
 
@@ -60,10 +70,10 @@ export function AuthProvider({ children }) {
   const isAdmin = profile?.role === 'Admin'
 
   const refreshProfile = useCallback(async () => {
-    if (!user?.id) return
-    profileFetchedFor.current = null // force re-fetch
-    await fetchProfile(user.id)
-  }, [user?.id, fetchProfile])
+    if (!currentUserId.current) return
+    profileFetchedFor.current = null
+    await fetchProfile(currentUserId.current)
+  }, [fetchProfile])
 
   const signUp = async (email, password, fullName) => {
     const { data, error } = await supabase.auth.signUp({
@@ -83,6 +93,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signOut()
     setProfile(null)
     profileFetchedFor.current = null
+    currentUserId.current = null
     return { error }
   }
 

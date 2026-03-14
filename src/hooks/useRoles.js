@@ -19,7 +19,7 @@ export function useRoles() {
     if (err) setError(err.message)
     else setRoles(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchRoles()

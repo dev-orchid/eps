@@ -22,7 +22,7 @@ export function usePaymentSettings() {
       setSettings(map)
     }
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchSettings()

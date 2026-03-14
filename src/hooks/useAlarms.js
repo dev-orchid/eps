@@ -19,7 +19,7 @@ export function useAlarms() {
     if (err) setError(err.message)
     else setAlarms(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchAlarms()

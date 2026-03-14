@@ -19,7 +19,7 @@ export function useExams() {
     if (err) setError(err.message)
     else setExams(data || [])
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchExams()

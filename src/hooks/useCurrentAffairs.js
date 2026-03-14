@@ -51,7 +51,7 @@ export function useCurrentAffairs() {
 
     setAffairs(merged)
     setLoading(false)
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     fetchAffairs(true)
