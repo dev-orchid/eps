@@ -115,8 +115,15 @@ export default function Plans() {
     if (isSubscription) {
       // Create subscription via edge function, then open Razorpay checkout
       try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setPayError('Please log in again to continue.')
+          setProcessing(false)
+          return
+        }
         const { data, error: fnError } = await supabase.functions.invoke('create-subscription', {
           body: { plan },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         })
         // supabase.functions.invoke returns error for non-2xx, but data may still have our JSON
         const result = data || {}
