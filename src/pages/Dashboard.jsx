@@ -141,9 +141,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Trial notification banner */}
-      <TrialBanner profile={profile} navigate={navigate} />
-
       {/* Stat Cards */}
       <div className="dashboard-stats">
         <div className="stat-card" style={{ borderLeft: '3px solid #14b8a6' }}>

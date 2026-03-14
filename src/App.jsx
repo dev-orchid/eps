@@ -20,6 +20,7 @@ import RoleManagement from './pages/RoleManagement'
 import Plans from './pages/Plans'
 import PaymentSettings from './pages/PaymentSettings'
 import { LogOut, User } from 'lucide-react'
+import TrialBanner from './components/TrialBanner'
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
@@ -247,6 +248,7 @@ function AppLayout() {
         className="app-main-area"
       >
         <TopHeader />
+        <TrialBanner />
         <main style={{
           flex: 1,
           padding: '24px 32px 32px',
