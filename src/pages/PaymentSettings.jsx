@@ -26,6 +26,8 @@ export default function PaymentSettings() {
   const [keySecret, setKeySecret] = useState('')
   const [monthlyPrice, setMonthlyPrice] = useState('')
   const [yearlyPrice, setYearlyPrice] = useState('')
+  const [monthlyPlanId, setMonthlyPlanId] = useState('')
+  const [yearlyPlanId, setYearlyPlanId] = useState('')
   const [showSecret, setShowSecret] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -36,6 +38,8 @@ export default function PaymentSettings() {
       setKeySecret(settings.razorpay_key_secret || '')
       setMonthlyPrice(settings.monthly_price ? String(parseInt(settings.monthly_price) / 100) : '150')
       setYearlyPrice(settings.yearly_price ? String(parseInt(settings.yearly_price) / 100) : '1350')
+      setMonthlyPlanId(settings.monthly_plan_id || '')
+      setYearlyPlanId(settings.yearly_plan_id || '')
     }
   }, [loading, settings])
 
@@ -46,6 +50,8 @@ export default function PaymentSettings() {
       razorpay_key_secret: keySecret,
       monthly_price: String(parseInt(monthlyPrice) * 100),
       yearly_price: String(parseInt(yearlyPrice) * 100),
+      monthly_plan_id: monthlyPlanId,
+      yearly_plan_id: yearlyPlanId,
       monthly_label: `₹${parseInt(monthlyPrice).toLocaleString()}/month`,
       yearly_label: `₹${parseInt(yearlyPrice).toLocaleString()}/year`,
     })
@@ -260,6 +266,83 @@ export default function PaymentSettings() {
         </div>
       </div>
 
+      {/* Subscription Plan IDs */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{
+          background: C.white, borderRadius: 12, border: '1px solid ' + C.border,
+          overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px',
+            borderBottom: '1px solid ' + C.border, background: C.bg,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <RefreshCw size={16} color={C.teal} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: C.navyLight }}>Subscription Plan IDs</span>
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: C.teal, background: C.tealLight,
+              padding: '3px 10px', borderRadius: 20,
+            }}>Razorpay Subscriptions</span>
+          </div>
+          <div style={{ padding: 20 }}>
+            <p style={{ fontSize: 13, color: C.muted, margin: '0 0 16px', lineHeight: 1.6 }}>
+              Create subscription plans in your <strong>Razorpay Dashboard</strong> &rarr; Subscriptions &rarr; Plans, then paste the Plan IDs below.
+              This enables auto-recurring billing for users.
+            </p>
+            <div className="ps-sub-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: C.navyLight, display: 'block', marginBottom: 6 }}>
+                  Monthly Plan ID
+                </label>
+                <input
+                  type="text"
+                  value={monthlyPlanId}
+                  onChange={e => setMonthlyPlanId(e.target.value)}
+                  placeholder="plan_xxxxxxxxxxxxxxx"
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid ' + C.border,
+                    fontSize: 14, color: C.navyLight, background: C.white, outline: 'none', boxSizing: 'border-box',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <p style={{ fontSize: 11, color: C.muted, margin: '4px 0 0' }}>
+                  Razorpay plan for &#8377;{monthlyPrice || '150'}/month recurring
+                </p>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: C.navyLight, display: 'block', marginBottom: 6 }}>
+                  Yearly Plan ID
+                </label>
+                <input
+                  type="text"
+                  value={yearlyPlanId}
+                  onChange={e => setYearlyPlanId(e.target.value)}
+                  placeholder="plan_xxxxxxxxxxxxxxx"
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid ' + C.border,
+                    fontSize: 14, color: C.navyLight, background: C.white, outline: 'none', boxSizing: 'border-box',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <p style={{ fontSize: 11, color: C.muted, margin: '4px 0 0' }}>
+                  Razorpay plan for &#8377;{yearlyPrice || '1350'}/year recurring
+                </p>
+              </div>
+            </div>
+            {(!monthlyPlanId && !yearlyPlanId) && (
+              <div style={{
+                background: C.orangeLight, border: '1px solid #fde68a', borderRadius: 8, padding: 12, marginTop: 16,
+              }}>
+                <p style={{ fontSize: 12, color: C.slate, margin: 0, lineHeight: 1.5 }}>
+                  <strong>Note:</strong> If no plan IDs are configured, checkout will use one-time payments instead of subscriptions.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Recent Payments */}
       <div style={{ marginTop: 24 }}>
         <div style={{
@@ -281,18 +364,19 @@ export default function PaymentSettings() {
           ) : (
             <div>
               <div className="ps-pay-header" style={{
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1.2fr',
+                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.2fr',
                 padding: '10px 20px', borderBottom: '1px solid ' + C.border, gap: 12,
               }}>
-                {['USER', 'PLAN', 'AMOUNT', 'STATUS', 'DATE'].map(h => (
+                {['USER', 'PLAN', 'AMOUNT', 'TYPE', 'STATUS', 'DATE'].map(h => (
                   <span key={h} style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</span>
                 ))}
               </div>
               {payments.slice(0, 20).map((pay, i) => {
                 const pUser = profiles.find(p => p.id === pay.user_id)
+                const isSub = !!pay.razorpay_subscription_id
                 return (
                   <div key={pay.id} className="ps-pay-row" style={{
-                    display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1.2fr',
+                    display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.2fr',
                     padding: '12px 20px', alignItems: 'center', gap: 12,
                     borderBottom: i < Math.min(payments.length, 20) - 1 ? '1px solid ' + C.border : 'none',
                   }}>
@@ -301,6 +385,13 @@ export default function PaymentSettings() {
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: C.slate, textTransform: 'capitalize' }}>{pay.plan}</span>
                     <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>&#8377;{(pay.amount / 100).toLocaleString()}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, width: 'fit-content',
+                      color: isSub ? '#7c3aed' : C.slate,
+                      background: isSub ? '#f5f3ff' : C.bg,
+                    }}>
+                      {isSub ? 'Subscription' : 'One-time'}
+                    </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600,
                       color: pay.status === 'success' ? C.green : pay.status === 'failed' ? C.red : C.orange,
@@ -326,7 +417,8 @@ export default function PaymentSettings() {
         @media (max-width: 768px) {
           .ps-stats-grid { grid-template-columns: 1fr !important; }
           .ps-main-grid { grid-template-columns: 1fr !important; }
-          .ps-pay-header, .ps-pay-row { grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr !important; }
+          .ps-sub-grid { grid-template-columns: 1fr !important; }
+          .ps-pay-header, .ps-pay-row { grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.2fr !important; }
         }
       `}</style>
     </div>

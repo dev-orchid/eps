@@ -41,6 +41,8 @@ export default function Plans() {
   const yearlyPrice = parseInt(settings.yearly_price || '135000')
   const razorpayKey = settings.razorpay_key_id || ''
   const currency = settings.currency || 'INR'
+  const monthlyPlanId = settings.monthly_plan_id || ''
+  const yearlyPlanId = settings.yearly_plan_id || ''
 
   const handlePayment = async (plan) => {
     setPayError(null)
@@ -60,55 +62,31 @@ export default function Plans() {
 
     const amount = plan === 'monthly' ? monthlyPrice : yearlyPrice
     const planLabel = plan === 'monthly' ? 'Monthly Plan' : 'Yearly Plan'
+    const planId = plan === 'monthly' ? monthlyPlanId : yearlyPlanId
+    const isSubscription = !!planId
 
-    const options = {
-      key: razorpayKey,
-      amount: amount,
-      currency: currency,
-      name: 'ExamPrep',
-      description: `ExamPrep ${planLabel}`,
-      prefill: {
-        email: user?.email || '',
-        name: profile?.full_name || '',
-        contact: profile?.phone || '',
-      },
-      theme: {
-        color: C.teal,
-      },
-      handler: async (response) => {
-        // Payment successful
-        await recordPayment({
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_order_id: response.razorpay_order_id || '',
-          plan: plan,
-          amount: amount,
-          currency: currency,
-          status: 'success',
-        })
+    const onSuccess = async (response) => {
+      await recordPayment({
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_order_id: response.razorpay_order_id || '',
+        razorpay_subscription_id: response.razorpay_subscription_id || '',
+        plan: plan,
+        amount: amount,
+        currency: currency,
+        status: 'success',
+      })
 
-        // Update user plan to Premium
-        const premiumEnd = new Date()
-        if (plan === 'monthly') premiumEnd.setMonth(premiumEnd.getMonth() + 1)
-        else premiumEnd.setFullYear(premiumEnd.getFullYear() + 1)
+      await supabase
+        .from('profiles')
+        .update({ plan: 'Premium', trial_end: null })
+        .eq('id', user.id)
 
-        await supabase
-          .from('profiles')
-          .update({ plan: 'Premium', trial_end: null })
-          .eq('id', user.id)
-
-        await refreshProfile()
-        setProcessing(false)
-        setSuccess(true)
-      },
-      modal: {
-        ondismiss: () => {
-          setProcessing(false)
-        },
-      },
+      await refreshProfile()
+      setProcessing(false)
+      setSuccess(true)
     }
 
-    const razorpay = new window.Razorpay(options)
-    razorpay.on('payment.failed', async (response) => {
+    const onFailure = async (response) => {
       await recordPayment({
         razorpay_payment_id: response.error?.metadata?.payment_id || '',
         razorpay_order_id: response.error?.metadata?.order_id || '',
@@ -119,7 +97,50 @@ export default function Plans() {
       })
       setPayError('Payment failed. Please try again.')
       setProcessing(false)
-    })
+    }
+
+    const options = {
+      key: razorpayKey,
+      name: 'ExamPrep',
+      description: `ExamPrep ${planLabel}`,
+      prefill: {
+        email: user?.email || '',
+        name: profile?.full_name || '',
+        contact: profile?.phone || '',
+      },
+      theme: { color: C.teal },
+      modal: { ondismiss: () => setProcessing(false) },
+    }
+
+    if (isSubscription) {
+      // Create subscription via edge function, then open Razorpay checkout
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await supabase.functions.invoke('create-subscription', {
+          body: { plan },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+        if (res.error || res.data?.error) {
+          setPayError(res.data?.error || 'Failed to create subscription. Please try again.')
+          setProcessing(false)
+          return
+        }
+        options.subscription_id = res.data.subscription_id
+      } catch {
+        setPayError('Failed to create subscription. Please try again.')
+        setProcessing(false)
+        return
+      }
+      options.handler = onSuccess
+    } else {
+      // One-time payment fallback
+      options.amount = amount
+      options.currency = currency
+      options.handler = onSuccess
+    }
+
+    const razorpay = new window.Razorpay(options)
+    razorpay.on('payment.failed', onFailure)
     razorpay.open()
   }
 
