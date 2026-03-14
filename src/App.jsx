@@ -6,6 +6,7 @@ import BottomNav from './components/BottomNav'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import ExamManager from './pages/ExamManager'
 import Tasks from './pages/Tasks'
 import StudyLog from './pages/StudyLog'
@@ -14,10 +15,13 @@ import Alarms from './pages/Alarms'
 import CurrentAffairs from './pages/CurrentAffairs'
 import Profile from './pages/Profile'
 import Landing from './pages/Landing'
+import UserManagement from './pages/UserManagement'
+import RoleManagement from './pages/RoleManagement'
 import { LogOut, User } from 'lucide-react'
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
+  '/admin/dashboard': 'Admin Dashboard',
   '/exams': 'Exams',
   '/tasks': 'Tasks',
   '/study': 'Study Log',
@@ -25,16 +29,18 @@ const pageTitles = {
   '/alarms': 'Alarms',
   '/current-affairs': 'Current Affairs',
   '/profile': 'Profile',
+  '/admin/users': 'User Management',
+  '/admin/roles': 'Role Management',
 }
 
 function TopHeader() {
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  const fullName = user?.user_metadata?.full_name || user?.email || 'User'
+  const fullName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'User'
   const email = user?.email || ''
   const initials = fullName
     .split(' ')
@@ -51,7 +57,6 @@ function TopHeader() {
     navigate('/signin')
   }
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -126,7 +131,6 @@ function TopHeader() {
           </span>
         </div>
 
-        {/* Dropdown menu */}
         {dropdownOpen && (
           <div style={{
             position: 'absolute',
@@ -141,15 +145,27 @@ function TopHeader() {
             overflow: 'hidden',
             animation: 'dropdownFadeIn 0.15s ease-out',
           }}>
-            {/* User info */}
             <div style={{
               padding: '14px 16px',
               borderBottom: '1px solid #f1f5f9',
             }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{fullName}</p>
               <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>{email}</p>
+              {profile?.role && (
+                <span style={{
+                  display: 'inline-block',
+                  marginTop: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: profile.role === 'Admin' ? '#0d9488' : '#64748b',
+                  background: profile.role === 'Admin' ? '#e0f7f0' : '#f1f5f9',
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                }}>
+                  {profile.role}
+                </span>
+              )}
             </div>
-            {/* Profile link */}
             <button
               onClick={() => { setDropdownOpen(false); navigate('/profile') }}
               style={{
@@ -173,9 +189,7 @@ function TopHeader() {
               <User size={16} color="#64748b" />
               Profile
             </button>
-            {/* Divider */}
             <div style={{ height: 1, background: '#f1f5f9' }} />
-            {/* Sign out */}
             <button
               onClick={handleSignOut}
               style={{
@@ -204,6 +218,11 @@ function TopHeader() {
       </div>
     </header>
   )
+}
+
+function SmartDashboard() {
+  const { isAdmin } = useAuth()
+  return isAdmin ? <AdminDashboard /> : <Dashboard />
 }
 
 function AppLayout() {
@@ -262,7 +281,8 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<SmartDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/exams" element={<ExamManager />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/study" element={<StudyLog />} />
@@ -270,6 +290,8 @@ export default function App() {
             <Route path="/alarms" element={<Alarms />} />
             <Route path="/current-affairs" element={<CurrentAffairs />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/roles" element={<RoleManagement />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

@@ -1,8 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, Users, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const tabs = [
+const userTabs = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/exams', label: 'Exams', icon: GraduationCap },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare },
@@ -12,18 +12,26 @@ const tabs = [
   { path: '/current-affairs', label: 'News', icon: Newspaper },
 ]
 
+const adminTabs = [
+  { path: '/admin/users', label: 'Users', icon: Users },
+  { path: '/admin/roles', label: 'Roles', icon: Shield },
+]
+
 function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, profile, isAdmin } = useAuth()
 
-  const fullName = user?.user_metadata?.full_name || user?.email || 'User'
+  const fullName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'User'
   const initials = fullName
     .split(' ')
     .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
+  const roleName = profile?.role || 'Student'
+
+  const tabs = isAdmin ? [...userTabs, ...adminTabs] : userTabs
 
   return (
     <nav className="sidebar-desktop" style={{
@@ -58,43 +66,54 @@ function Sidebar() {
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
+        overflowY: 'auto',
       }}>
-        {tabs.map(({ path, label, icon: Icon }) => {
+        {tabs.map(({ path, label, icon: Icon }, i) => {
           const active = location.pathname === path
+          const isFirstAdmin = isAdmin && path === '/admin/users'
           return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                width: '100%',
-                padding: '10px 14px',
-                border: 'none',
-                borderRadius: 10,
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: active ? 600 : 500,
-                color: active ? '#0d9488' : '#64748b',
-                background: active ? '#e0f7f0' : 'transparent',
-                transition: 'all 0.15s ease',
-                textAlign: 'left',
-              }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background = '#f1f5f9'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
-            >
-              <Icon size={20} />
-              <span>{label}</span>
-            </button>
+            <div key={path}>
+              {isFirstAdmin && (
+                <div style={{
+                  padding: '12px 14px 6px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                }}>
+                  Admin
+                </div>
+              )}
+              <button
+                onClick={() => navigate(path)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: 'none',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: active ? 600 : 500,
+                  color: active ? '#0d9488' : '#64748b',
+                  background: active ? '#e0f7f0' : 'transparent',
+                  transition: 'all 0.15s ease',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={e => {
+                  if (!active) e.currentTarget.style.background = '#f1f5f9'
+                }}
+                onMouseLeave={e => {
+                  if (!active) e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                <Icon size={20} />
+                <span>{label}</span>
+              </button>
+            </div>
           )
         })}
       </div>
@@ -140,7 +159,14 @@ function Sidebar() {
           }}>
             {fullName}
           </p>
-          <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, margin: 0 }}>Student</p>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 500,
+            margin: 0,
+            color: isAdmin ? '#0d9488' : '#94a3b8',
+          }}>
+            {roleName}
+          </p>
         </div>
       </div>
     </nav>
@@ -150,6 +176,12 @@ function Sidebar() {
 function MobileBottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
+
+  // On mobile show only the main tabs (max 7 for space) + 1 admin shortcut
+  const mobileTabs = isAdmin
+    ? [...userTabs.slice(0, 5), { path: '/admin/users', label: 'Admin', icon: Users }]
+    : userTabs
 
   return (
     <nav className="mobile-bottom-nav" style={{
@@ -164,8 +196,8 @@ function MobileBottomNav() {
       padding: '6px 0 env(safe-area-inset-bottom, 6px)',
       zIndex: 100,
     }}>
-      {tabs.map(({ path, label, icon: Icon }) => {
-        const active = location.pathname === path
+      {mobileTabs.map(({ path, label, icon: Icon }) => {
+        const active = location.pathname === path || (path === '/admin/users' && location.pathname.startsWith('/admin'))
         return (
           <button
             key={path}
