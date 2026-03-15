@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   GraduationCap, CheckSquare, BarChart3, Bell, BookOpen, Newspaper,
   Clock, Target, Award, ArrowRight, Check, Star, Users, Zap, Shield,
-  ChevronDown, Menu, X, Flame, Brain, FileText, TrendingUp,
+  ChevronDown, Menu, X, Flame, Brain, FileText, TrendingUp, BrainCircuit,
 } from 'lucide-react'
 
 // ── Colors ──
@@ -59,6 +59,20 @@ const FEATURES = [
     color: '#ef4444',
     bg: '#fef2f2',
   },
+  {
+    icon: BrainCircuit,
+    title: 'MCQ Test Series',
+    desc: 'Practice 170+ UPSC & State PSC PYQs across Polity, Economy, History, Science & more. Filter by exam, year, and difficulty.',
+    color: '#6366f1',
+    bg: '#eef2ff',
+  },
+  {
+    icon: Target,
+    title: 'Subject-wise Practice',
+    desc: 'Pick any GS paper or subject — Physics, Chemistry, Biology, Maths included. Instant quiz with detailed explanations.',
+    color: '#ec4899',
+    bg: '#fdf2f8',
+  },
 ]
 
 const GS_PAPERS = [
@@ -76,16 +90,16 @@ const TESTIMONIALS = [
     avatar: 'PS',
   },
   {
-    name: 'Rahul Verma',
-    role: 'BPSC Aspirant',
+    name: 'Shashank Sharma',
+    role: 'BPSC AEDO Aspirant',
     text: 'Finally an app that understands what PSC aspirants actually need. The study logger keeps me accountable.',
-    avatar: 'RV',
+    avatar: 'SS',
   },
   {
-    name: 'Ananya Reddy',
+    name: 'Anuradha Kumari',
     role: 'UPSC CSE 2025 Aspirant',
-    text: 'Used ExamPrep throughout my preparation. The exam countdown and task planner kept me on track during Mains.',
-    avatar: 'AR',
+    text: 'Used ExamPrep throughout my preparation. The exam countdown and task planner kept me on track during Prelims.',
+    avatar: 'AK',
   },
 ]
 
@@ -419,7 +433,7 @@ export default function Landing() {
           </p>
 
           <div className="lp-features-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20,
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20,
           }}>
             {FEATURES.map(({ icon: Icon, title, desc, color, bg }) => (
               <div key={title} style={{
@@ -735,6 +749,9 @@ export default function Landing() {
 
       {/* ─── RESPONSIVE STYLES ─── */}
       <style>{`
+        @media (max-width: 1024px) {
+          .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
         @media (max-width: 768px) {
           .lp-nav-links { display: none !important; }
           .lp-hamburger { display: flex !important; }
