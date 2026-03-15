@@ -13,7 +13,7 @@ const DIFFICULTIES = [
   { key: 'medium', label: 'Medium', icon: '🟡', desc: 'Exam-level questions' },
   { key: 'hard', label: 'Hard', icon: '🔴', desc: 'Advanced & tricky' },
 ]
-const COUNTS = [5, 10, 15, 20]
+const COUNTS = [5, 10, 15, 20, 30, 50]
 const EXAMS = ['All', 'UPSC Prelims', 'BPSC', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL']
 const YEARS = ['', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016']
 
