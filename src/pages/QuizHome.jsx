@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
-const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims']
+const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science']
 const DIFFICULTIES = [
   { key: 'easy', label: 'Easy', icon: '🟢', desc: 'Basics & fundamentals' },
   { key: 'medium', label: 'Medium', icon: '🟡', desc: 'Exam-level questions' },
