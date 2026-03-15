@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, BrainCircuit, Users, Shield, CreditCard, ClipboardList, User, LogOut, ChevronUp } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, CheckSquare, BookOpen, BarChart3, Bell, Newspaper, BrainCircuit, StickyNote, ListChecks, Users, Shield, CreditCard, ClipboardList, User, LogOut, ChevronUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const userTabs = [
@@ -12,6 +12,8 @@ const userTabs = [
   { path: '/alarms', label: 'Alarms', icon: Bell },
   { path: '/current-affairs', label: 'News', icon: Newspaper },
   { path: '/quiz', label: 'Quiz', icon: BrainCircuit },
+  { path: '/notes', label: 'Notes', icon: StickyNote },
+  { path: '/syllabus', label: 'Syllabus', icon: ListChecks },
 ]
 
 const adminTabs = [

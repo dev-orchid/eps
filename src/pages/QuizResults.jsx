@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuiz } from '../hooks/useQuiz'
 import { supabase } from '../lib/supabase'
-import { Trophy, Target, XCircle, MinusCircle, Clock, RotateCcw, Home, CheckCircle, AlertCircle } from 'lucide-react'
+import { Trophy, Target, XCircle, MinusCircle, Clock, RotateCcw, Home, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 const C = {
@@ -81,6 +81,19 @@ export default function QuizResults() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 60 }}>
+      {/* Back button */}
+      <button onClick={() => navigate('/quiz')} style={{
+        display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+        fontSize: 13, fontWeight: 500, color: '#334155', cursor: 'pointer',
+        transition: 'all 0.15s', marginBottom: 16,
+      }}
+        onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+        onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+      >
+        <ArrowLeft size={15} /> Back to Quiz
+      </button>
+
       {/* Score Card */}
       <div style={{
         background: C.white, border: `1px solid ${C.border}`, borderRadius: 20,

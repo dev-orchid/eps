@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuiz } from '../hooks/useQuiz'
 import {
   BrainCircuit, Zap, BookOpen, Clock, Trophy, ChevronRight,
-  Loader2, AlertCircle, Target, BarChart3, Flame, ChevronDown,
+  Loader2, AlertCircle, Target, BarChart3, Flame, ChevronDown, TrendingUp,
 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -420,9 +420,24 @@ export default function QuizHome() {
               </div>
               <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Recent Quizzes</span>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                onClick={() => navigate('/quiz/analytics')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
+                  background: '#fff', fontSize: 12, fontWeight: 600, color: '#14b8a6',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f0fdfa'; e.currentTarget.style.borderColor = '#14b8a6' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e2e8f0' }}
+              >
+                <TrendingUp size={13} /> Analytics
+              </button>
             <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>
               {completedAttempts.length} total
             </span>
+            </div>
           </div>
 
           {/* Table Header */}

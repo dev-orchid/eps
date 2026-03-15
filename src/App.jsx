@@ -22,6 +22,9 @@ import QuizHome from './pages/QuizHome'
 import QuestionBank from './pages/QuestionBank'
 import QuizPlay from './pages/QuizPlay'
 import QuizResults from './pages/QuizResults'
+import Notes from './pages/Notes'
+import Syllabus from './pages/Syllabus'
+import QuizAnalytics from './pages/QuizAnalytics'
 import TrialBanner from './components/TrialBanner'
 
 const pageTitles = {
@@ -42,6 +45,9 @@ const pageTitles = {
   '/quiz/play': 'Quiz',
   '/quiz/results': 'Quiz Results',
   '/admin/questions': 'Question Bank',
+  '/notes': 'Notes',
+  '/syllabus': 'Syllabus Tracker',
+  '/quiz/analytics': 'Quiz Analytics',
 }
 
 function TopHeader() {
@@ -136,6 +142,9 @@ export default function App() {
             <Route path="/quiz" element={<QuizHome />} />
             <Route path="/quiz/play" element={<QuizPlay />} />
             <Route path="/quiz/results" element={<QuizResults />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/syllabus" element={<Syllabus />} />
+            <Route path="/quiz/analytics" element={<QuizAnalytics />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/roles" element={<RoleManagement />} />
