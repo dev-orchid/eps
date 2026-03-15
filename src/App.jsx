@@ -18,6 +18,10 @@ import UserManagement from './pages/UserManagement'
 import RoleManagement from './pages/RoleManagement'
 import Plans from './pages/Plans'
 import PaymentSettings from './pages/PaymentSettings'
+import QuizHome from './pages/QuizHome'
+import QuestionBank from './pages/QuestionBank'
+import QuizPlay from './pages/QuizPlay'
+import QuizResults from './pages/QuizResults'
 import TrialBanner from './components/TrialBanner'
 
 const pageTitles = {
@@ -34,6 +38,10 @@ const pageTitles = {
   '/admin/roles': 'Role Management',
   '/admin/payments': 'Payment Settings',
   '/plans': 'Plans',
+  '/quiz': 'Quiz',
+  '/quiz/play': 'Quiz',
+  '/quiz/results': 'Quiz Results',
+  '/admin/questions': 'Question Bank',
 }
 
 function TopHeader() {
@@ -125,10 +133,14 @@ export default function App() {
             <Route path="/progress" element={<Progress />} />
             <Route path="/alarms" element={<Alarms />} />
             <Route path="/current-affairs" element={<CurrentAffairs />} />
+            <Route path="/quiz" element={<QuizHome />} />
+            <Route path="/quiz/play" element={<QuizPlay />} />
+            <Route path="/quiz/results" element={<QuizResults />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/roles" element={<RoleManagement />} />
             <Route path="/admin/payments" element={<PaymentSettings />} />
+            <Route path="/admin/questions" element={<QuestionBank />} />
             <Route path="/plans" element={<Plans />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
