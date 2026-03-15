@@ -26,10 +26,10 @@ export function useTasks() {
     fetchTasks()
   }, [fetchTasks])
 
-  const addTask = async (title, due_date, priority) => {
+  const addTask = async (title, due_date, priority, exam_id) => {
     const { error: err } = await supabase
       .from('tasks')
-      .insert([{ title, due_date, priority }])
+      .insert([{ title, due_date, priority, exam_id: exam_id || null }])
     if (err) { setError(err.message); return false }
     await fetchTasks()
     return true

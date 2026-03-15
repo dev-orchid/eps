@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Trash2, CheckSquare, Square, X, Filter } from 'lucide-react';
+import { Plus, Trash2, CheckSquare, Square, X, Filter, GraduationCap } from 'lucide-react';
 import { useTasks } from '../hooks/useTasks';
+import { useExams } from '../hooks/useExams';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PriorityBadge from '../components/PriorityBadge';
 import EmptyState from '../components/EmptyState';
@@ -88,7 +89,7 @@ const styles = {
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: '1.5fr 1fr 0.8fr 1fr',
     gap: '12px',
     marginBottom: '16px',
   },
@@ -215,12 +216,18 @@ function getTodayString() {
 
 export default function Tasks() {
   const { tasks, loading, addTask, toggleTask, deleteTask } = useTasks();
+  const { exams } = useExams();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('today');
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [examId, setExamId] = useState('');
   const [hoveredDelete, setHoveredDelete] = useState(null);
+
+  // Build exam lookup map
+  const examMap = {};
+  (exams || []).forEach(e => { examMap[e.id] = e });
 
   if (loading) {
     return (
@@ -247,10 +254,11 @@ export default function Tasks() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    addTask(title.trim(), dueDate || today, priority);
+    addTask(title.trim(), dueDate || today, priority, examId || null);
     setTitle('');
     setDueDate('');
     setPriority('medium');
+    setExamId('');
     setShowForm(false);
   };
 
@@ -258,6 +266,7 @@ export default function Tasks() {
     setTitle('');
     setDueDate('');
     setPriority('medium');
+    setExamId('');
     setShowForm(false);
   };
 
@@ -332,6 +341,19 @@ export default function Tasks() {
                 <option value="low">Low</option>
               </select>
             </div>
+            <div>
+              <label style={styles.label}>Exam (optional)</label>
+              <select
+                style={styles.select}
+                value={examId}
+                onChange={(e) => setExamId(e.target.value)}
+              >
+                <option value="">No exam</option>
+                {(exams || []).map(ex => (
+                  <option key={ex.id} value={ex.id}>{ex.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div style={styles.formActions}>
             <button type="button" style={styles.cancelBtn} onClick={handleCancel}>
@@ -368,9 +390,21 @@ export default function Tasks() {
               </button>
               <div style={styles.taskContent}>
                 <p style={styles.taskTitle(task.completed)}>{task.title}</p>
-                {task.due_date && (
-                  <div style={styles.taskDueDate}>{task.due_date}</div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  {task.due_date && (
+                    <span style={styles.taskDueDate}>{task.due_date}</span>
+                  )}
+                  {task.exam_id && examMap[task.exam_id] && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      fontSize: 11, fontWeight: 600, color: '#6366f1',
+                      background: '#eef2ff', padding: '1px 8px', borderRadius: 6,
+                    }}>
+                      <GraduationCap size={10} />
+                      {examMap[task.exam_id].name}
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={styles.taskRight}>
                 <PriorityBadge priority={task.priority} />

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useExams } from '../hooks/useExams'
+import { useTasks } from '../hooks/useTasks'
+import { useStudySessions } from '../hooks/useStudySessions'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CountdownBadge from '../components/CountdownBadge'
 import EmptyState from '../components/EmptyState'
-import { Plus, Trash2, X } from 'lucide-react'
+import { Plus, Trash2, X, CheckSquare, Clock } from 'lucide-react'
 
 const inputStyle = {
   width: '100%',
@@ -28,7 +30,26 @@ const labelStyle = {
 
 export default function ExamManager() {
   const { exams, loading, addExam, deleteExam } = useExams()
+  const { tasks } = useTasks()
+  const { sessions } = useStudySessions()
   const [showForm, setShowForm] = useState(false)
+
+  // Per-exam stats
+  const examStats = useMemo(() => {
+    const stats = {}
+    ;(tasks || []).forEach(t => {
+      if (!t.exam_id) return
+      if (!stats[t.exam_id]) stats[t.exam_id] = { tasks: 0, tasksDone: 0, studyMinutes: 0 }
+      stats[t.exam_id].tasks++
+      if (t.completed) stats[t.exam_id].tasksDone++
+    })
+    ;(sessions || []).forEach(s => {
+      if (!s.exam_id) return
+      if (!stats[s.exam_id]) stats[s.exam_id] = { tasks: 0, tasksDone: 0, studyMinutes: 0 }
+      stats[s.exam_id].studyMinutes += (s.duration_minutes || 0)
+    })
+    return stats
+  }, [tasks, sessions])
   const [name, setName] = useState('')
   const [examDate, setExamDate] = useState('')
   const [description, setDescription] = useState('')
@@ -191,11 +212,31 @@ export default function ExamManager() {
                     <p style={{ fontSize: 13, color: '#475569', marginBottom: 6, lineHeight: 1.5 }}>{exam.description}</p>
                   )}
                   {exam.exam_date && (
-                    <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 6px' }}>
                       {new Date(exam.exam_date + 'T00:00:00').toLocaleDateString('en-US', {
                         weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
                       })}
                     </p>
+                  )}
+                  {/* Linked tasks & study stats */}
+                  {examStats[exam.id] && (examStats[exam.id].tasks > 0 || examStats[exam.id].studyMinutes > 0) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
+                      {examStats[exam.id].tasks > 0 && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#475569' }}>
+                          <CheckSquare size={13} color="#14b8a6" />
+                          {examStats[exam.id].tasksDone}/{examStats[exam.id].tasks} tasks
+                        </span>
+                      )}
+                      {examStats[exam.id].studyMinutes > 0 && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#475569' }}>
+                          <Clock size={13} color="#6366f1" />
+                          {examStats[exam.id].studyMinutes >= 60
+                            ? `${Math.floor(examStats[exam.id].studyMinutes / 60)}h ${examStats[exam.id].studyMinutes % 60}m`
+                            : `${examStats[exam.id].studyMinutes}m`
+                          } studied
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <button

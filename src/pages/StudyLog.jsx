@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useStudySessions } from '../hooks/useStudySessions';
+import { useExams } from '../hooks/useExams';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
-import { Plus, Trash2, BookOpen, Clock, X, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Clock, X, ChevronDown, ChevronUp, ExternalLink, GraduationCap } from 'lucide-react';
 
 function formatDuration(minutes) {
   const hrs = Math.floor(minutes / 60);
@@ -26,13 +27,18 @@ function getTodayString() {
 
 export default function StudyLog() {
   const { sessions, addSession, deleteSession, loading } = useStudySessions();
+  const { exams } = useExams();
   const [showForm, setShowForm] = useState(false);
   const [subject, setSubject] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [date, setDate] = useState(getTodayString());
   const [notes, setNotes] = useState('');
+  const [examId, setExamId] = useState('');
   const [hoveredDelete, setHoveredDelete] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+
+  const examMap = {};
+  (exams || []).forEach(e => { examMap[e.id] = e });
 
   const todayStr = getTodayString();
   const todayMinutes = (sessions || [])
@@ -46,11 +52,12 @@ export default function StudyLog() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!subject.trim() || !durationMinutes || !date) return;
-    addSession(subject.trim(), Number(durationMinutes), date, notes.trim());
+    addSession(subject.trim(), Number(durationMinutes), date, notes.trim(), examId || null);
     setSubject('');
     setDurationMinutes('');
     setDate(getTodayString());
     setNotes('');
+    setExamId('');
     setShowForm(false);
   };
 
@@ -190,6 +197,19 @@ export default function StudyLog() {
                   style={inputStyle}
                 />
               </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={labelStyle}>Exam (optional)</label>
+                <select
+                  value={examId}
+                  onChange={(e) => setExamId(e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">No exam linked</option>
+                  {(exams || []).map(ex => (
+                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                  ))}
+                </select>
+              </div>
               <div style={{ marginBottom: 18 }}>
                 <label style={labelStyle}>Notes (optional)</label>
                 <textarea
@@ -291,12 +311,22 @@ export default function StudyLog() {
                             : session.subject}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#475569' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#475569', flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Clock size={14} color="#14b8a6" />
                           {formatDuration(session.duration_minutes)}
                         </span>
                         <span>{session.date}</span>
+                        {session.exam_id && examMap[session.exam_id] && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 3,
+                            fontSize: 11, fontWeight: 600, color: '#6366f1',
+                            background: '#eef2ff', padding: '1px 8px', borderRadius: 6,
+                          }}>
+                            <GraduationCap size={10} />
+                            {examMap[session.exam_id].name}
+                          </span>
+                        )}
                       </div>
                       {hasNotes && !isExpanded && (
                         <div style={{

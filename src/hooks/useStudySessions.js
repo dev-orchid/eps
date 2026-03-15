@@ -26,10 +26,10 @@ export function useStudySessions() {
     fetchSessions()
   }, [fetchSessions])
 
-  const addSession = async (subject, duration_minutes, date, notes) => {
+  const addSession = async (subject, duration_minutes, date, notes, exam_id) => {
     const { error: err } = await supabase
       .from('study_sessions')
-      .insert([{ subject, duration_minutes: parseInt(duration_minutes), date, notes }])
+      .insert([{ subject, duration_minutes: parseInt(duration_minutes), date, notes, exam_id: exam_id || null }])
     if (err) { setError(err.message); return false }
     await fetchSessions()
     return true
