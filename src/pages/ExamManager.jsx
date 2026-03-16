@@ -138,14 +138,19 @@ export default function ExamManager() {
           </div>
           <div>
             <label style={labelStyle}>Exam Date</label>
-            <input
-              type="date"
-              value={examDate}
-              onChange={e => setExamDate(e.target.value)}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#14b8a6'}
-              onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-            />
+            <div
+              onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+              style={{ ...inputStyle, cursor: 'pointer', padding: 0 }}
+            >
+              <input
+                type="date"
+                value={examDate}
+                onChange={e => setExamDate(e.target.value)}
+                style={{ border: 'none', background: 'transparent', fontSize: 14, color: '#1e293b', cursor: 'pointer', outline: 'none', width: '100%', padding: '10px 12px' }}
+                onFocus={e => e.target.parentElement.style.borderColor = '#14b8a6'}
+                onBlur={e => e.target.parentElement.style.borderColor = '#e2e8f0'}
+              />
+            </div>
           </div>
           <div>
             <label style={labelStyle}>Description</label>

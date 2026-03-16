@@ -1,217 +1,64 @@
-import { useState } from 'react';
-import { Plus, Trash2, CheckSquare, Square, X, Filter, GraduationCap } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Trash2, CheckSquare, Square, X, GraduationCap, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import { useTasks } from '../hooks/useTasks';
 import { useExams } from '../hooks/useExams';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PriorityBadge from '../components/PriorityBadge';
 import EmptyState from '../components/EmptyState';
 
-const isMobile = () => window.innerWidth < 768;
+// UPSC-relevant quick task templates
+const QUICK_TASKS = [
+  { label: 'Read NCERT', icon: '📖', template: 'Read NCERT — ' },
+  { label: 'Answer Writing', icon: '✍️', template: 'Answer Writing Practice — ' },
+  { label: 'Revise Notes', icon: '🔄', template: 'Revise — ' },
+  { label: 'Solve PYQs', icon: '🎯', template: 'Solve PYQs — ' },
+  { label: 'Read Newspaper', icon: '📰', template: 'Read & Note — The Hindu / Indian Express' },
+  { label: 'Mock Test', icon: '📝', template: 'Attempt Mock Test — ' },
+];
 
-const styles = {
-  page: {
-    paddingTop: '20px',
-    paddingBottom: isMobile() ? '80px' : '20px',
-    color: '#1e293b',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    gap: '12px',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  title: {
-    fontSize: '28px',
-    fontWeight: '700',
-    margin: 0,
-    color: '#1e293b',
-  },
-  taskCount: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    fontWeight: '400',
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  filterGroup: {
-    display: 'flex',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    border: '1px solid #e2e8f0',
-  },
-  filterBtn: (active) => ({
-    padding: '8px 16px',
-    fontSize: '13px',
-    fontWeight: '500',
-    border: 'none',
-    cursor: 'pointer',
-    backgroundColor: active ? '#14b8a6' : '#ffffff',
-    color: active ? '#ffffff' : '#94a3b8',
-    transition: 'all 0.15s ease',
-  }),
-  addBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    backgroundColor: '#14b8a6',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
-  },
-  formCard: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  },
-  formTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    margin: '0 0 16px 0',
-    color: '#1e293b',
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1.5fr 1fr 0.8fr 1fr',
-    gap: '12px',
-    marginBottom: '16px',
-  },
-  label: {
-    display: 'block',
-    fontSize: '12px',
-    fontWeight: '500',
-    color: '#94a3b8',
-    marginBottom: '6px',
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    fontSize: '14px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    color: '#1e293b',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  select: {
-    width: '100%',
-    padding: '10px 12px',
-    fontSize: '14px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    color: '#1e293b',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  formActions: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '8px',
-  },
-  submitBtn: {
-    padding: '8px 20px',
-    fontSize: '14px',
-    fontWeight: '500',
-    backgroundColor: '#14b8a6',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  cancelBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    backgroundColor: '#ffffff',
-    color: '#475569',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  taskCard: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '12px',
-    padding: '16px',
-    marginBottom: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    transition: 'border-color 0.15s ease',
-  },
-  checkboxBtn: {
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  taskContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  taskTitle: (completed) => ({
-    fontSize: '15px',
-    fontWeight: '500',
-    margin: 0,
-    color: completed ? '#94a3b8' : '#1e293b',
-    textDecoration: completed ? 'line-through' : 'none',
-  }),
-  taskDueDate: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    marginTop: '4px',
-  },
-  taskRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    flexShrink: 0,
-  },
-  deleteBtn: {
-    background: 'none',
-    border: 'none',
-    padding: '4px',
-    cursor: 'pointer',
-    color: '#64748b',
-    display: 'flex',
-    alignItems: 'center',
-    borderRadius: '4px',
-    transition: 'color 0.15s ease',
-  },
-};
+const UPSC_SUBJECTS = [
+  'Indian History', 'World History', 'Geography', 'Indian Society',
+  'Polity & Constitution', 'Governance', 'International Relations', 'Social Justice',
+  'Indian Economy', 'Science & Technology', 'Environment & Ecology', 'Internal Security',
+  'Ethics & Integrity', 'CSAT', 'Essay', 'Current Affairs', 'Optional Subject',
+];
 
 function getTodayString() {
   const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getWeekEnd() {
+  const d = new Date();
+  const daysUntilSunday = 7 - d.getDay();
+  d.setDate(d.getDate() + (daysUntilSunday === 7 ? 0 : daysUntilSunday));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const today = getTodayString();
+  if (dateStr === today) return 'Today';
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  if (dateStr === tomorrowStr) return 'Tomorrow';
+  if (dateStr < today) return `Overdue (${dateStr})`;
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function isOverdue(dateStr) {
+  return dateStr && dateStr < getTodayString();
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':');
+  const hour = parseInt(h);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${h12}:${m} ${ampm}`;
 }
 
 export default function Tasks() {
@@ -222,207 +69,406 @@ export default function Tasks() {
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [dueTime, setDueTime] = useState('');
   const [examId, setExamId] = useState('');
   const [hoveredDelete, setHoveredDelete] = useState(null);
 
-  // Build exam lookup map
   const examMap = {};
   (exams || []).forEach(e => { examMap[e.id] = e });
 
-  if (loading) {
-    return (
-      <div style={styles.page}>
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   const today = getTodayString();
+  const weekEnd = getWeekEnd();
 
-  const filteredTasks = filter === 'today'
-    ? tasks.filter((t) => t.due_date === today)
-    : tasks;
+  // Filter tasks
+  const filteredTasks = useMemo(() => {
+    let list = tasks || [];
+    if (filter === 'today') {
+      list = list.filter(t => t.due_date === today || (isOverdue(t.due_date) && !t.completed));
+    } else if (filter === 'week') {
+      list = list.filter(t => (t.due_date >= today && t.due_date <= weekEnd) || (isOverdue(t.due_date) && !t.completed));
+    } else if (filter === 'pending') {
+      list = list.filter(t => !t.completed);
+    }
+    return list;
+  }, [tasks, filter, today, weekEnd]);
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (a.completed === b.completed) return 0;
-    return a.completed ? 1 : -1;
-  });
+  // Sort: overdue first, then by completion, then by date
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      const aOverdue = isOverdue(a.due_date) && !a.completed;
+      const bOverdue = isOverdue(b.due_date) && !b.completed;
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      const dateCmp = (a.due_date || '').localeCompare(b.due_date || '');
+      if (dateCmp !== 0) return dateCmp;
+      // Within same date, sort by time (tasks with time first, then by time ascending)
+      if (a.due_time && !b.due_time) return -1;
+      if (!a.due_time && b.due_time) return 1;
+      if (a.due_time && b.due_time) return a.due_time.localeCompare(b.due_time);
+      return 0;
+    });
+  }, [filteredTasks]);
 
-  const completedCount = filteredTasks.filter((t) => t.completed).length;
+  const completedCount = filteredTasks.filter(t => t.completed).length;
   const totalCount = filteredTasks.length;
+  const overdueCount = (tasks || []).filter(t => isOverdue(t.due_date) && !t.completed).length;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    addTask(title.trim(), dueDate || today, priority, examId || null);
+    addTask(title.trim(), dueDate || today, priority, examId || null, dueTime || null);
     setTitle('');
     setDueDate('');
+    setDueTime('');
     setPriority('medium');
     setExamId('');
     setShowForm(false);
   };
 
-  const handleCancel = () => {
-    setTitle('');
-    setDueDate('');
-    setPriority('medium');
-    setExamId('');
-    setShowForm(false);
+  const handleQuickTask = (template) => {
+    setTitle(template);
+    setShowForm(true);
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    fontSize: 14,
+    backgroundColor: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: 8,
+    color: '#1e293b',
+    outline: 'none',
+    boxSizing: 'border-box',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#94a3b8',
+    marginBottom: 6,
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <h1 style={styles.title}>Tasks</h1>
-          <span style={styles.taskCount}>
-            {completedCount}/{totalCount}
-          </span>
-        </div>
-        <div style={styles.headerRight}>
-          <div style={styles.filterGroup}>
-            <button
-              style={styles.filterBtn(filter === 'today')}
-              onClick={() => setFilter('today')}
-            >
-              <Filter size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-              Today
-            </button>
-            <button
-              style={styles.filterBtn(filter === 'all')}
-              onClick={() => setFilter('all')}
-            >
-              All
-            </button>
+    <div style={{ paddingTop: 20, paddingBottom: 80, color: '#1e293b' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1e293b' }}>Daily Tasks</h1>
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>
+              {completedCount}/{totalCount}
+            </span>
           </div>
-          <button
-            style={styles.addBtn}
-            onClick={() => setShowForm(true)}
-          >
-            <Plus size={16} />
-            Add
-          </button>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>Plan your UPSC preparation day</p>
         </div>
+        <button
+          onClick={() => setShowForm(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', fontSize: 14, fontWeight: 600,
+            backgroundColor: '#14b8a6', color: '#ffffff',
+            border: 'none', borderRadius: 8, cursor: 'pointer',
+          }}
+        >
+          <Plus size={16} />
+          Add Task
+        </button>
       </div>
 
+      {/* Overdue Warning */}
+      {overdueCount > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 14px', marginBottom: 16,
+          backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+          borderRadius: 8, fontSize: 13, color: '#dc2626',
+        }}>
+          <AlertTriangle size={15} />
+          <span><strong>{overdueCount}</strong> overdue task{overdueCount > 1 ? 's' : ''} pending</span>
+        </div>
+      )}
+
+      {/* Quick Add Templates */}
+      {!showForm && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+          {QUICK_TASKS.map(qt => (
+            <button
+              key={qt.label}
+              onClick={() => handleQuickTask(qt.template)}
+              style={{
+                padding: '5px 10px', fontSize: 11, fontWeight: 600,
+                border: '1px solid #e2e8f0', borderRadius: 8,
+                backgroundColor: '#ffffff', color: '#475569',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#14b8a6'; e.currentTarget.style.color = '#0d9488'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+            >
+              <span>{qt.icon}</span> {qt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        {[
+          { key: 'today', label: 'Today' },
+          { key: 'week', label: 'This Week' },
+          { key: 'pending', label: 'Pending' },
+          { key: 'all', label: 'All' },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            style={{
+              padding: '7px 16px', fontSize: 13, fontWeight: 600,
+              border: 'none', borderRadius: 8, cursor: 'pointer',
+              backgroundColor: filter === tab.key ? '#14b8a6' : '#f1f5f9',
+              color: filter === tab.key ? '#ffffff' : '#475569',
+              transition: 'background-color 0.15s',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Add Form */}
       {showForm && (
-        <form style={styles.formCard} onSubmit={handleSubmit}>
-          <p style={styles.formTitle}>New Task</p>
-          <div style={styles.formGrid}>
-            <div>
-              <label style={styles.label}>Title</label>
+        <div style={{
+          backgroundColor: '#ffffff', border: '1px solid #e2e8f0',
+          borderRadius: 12, padding: 20, marginBottom: 20,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1e293b' }}>New Task</h3>
+            <button
+              onClick={() => { setShowForm(false); setTitle(''); }}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 4 }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Task</label>
               <input
-                style={styles.input}
+                style={inputStyle}
                 type="text"
-                placeholder="Task title..."
+                placeholder="e.g. Read Laxmikanth Ch.5 — Parliament"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 autoFocus
               />
             </div>
-            <div>
-              <label style={styles.label}>Due Date</label>
-              <input
-                style={styles.input}
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.8fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={labelStyle}>Due Date</label>
+                <div
+                  onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+                  style={{ ...inputStyle, cursor: 'pointer', padding: 0 }}
+                >
+                  <input
+                    type="date"
+                    value={dueDate || today}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    style={{ border: 'none', background: 'transparent', fontSize: 14, color: '#1e293b', cursor: 'pointer', outline: 'none', width: '100%', padding: '10px 12px' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Time</label>
+                <div
+                  onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+                  style={{ ...inputStyle, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0' }}
+                >
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    style={{
+                      border: 'none', background: 'transparent', fontSize: 14,
+                      color: dueTime ? '#1e293b' : '#94a3b8', cursor: 'pointer',
+                      outline: 'none', width: '100%', padding: '10px 12px',
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Priority</label>
+                <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+                  {[
+                    { value: 'high', label: 'High', color: '#ef4444' },
+                    { value: 'medium', label: 'Med', color: '#f59e0b' },
+                    { value: 'low', label: 'Low', color: '#22c55e' },
+                  ].map(p => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setPriority(p.value)}
+                      style={{
+                        flex: 1, padding: '8px 4px', fontSize: 12, fontWeight: 600,
+                        border: priority === p.value ? `2px solid ${p.color}` : '1px solid #e2e8f0',
+                        borderRadius: 6, cursor: 'pointer',
+                        backgroundColor: priority === p.value ? `${p.color}12` : '#ffffff',
+                        color: priority === p.value ? p.color : '#94a3b8',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Exam (optional)</label>
+                <select
+                  style={inputStyle}
+                  value={examId}
+                  onChange={(e) => setExamId(e.target.value)}
+                >
+                  <option value="">No exam</option>
+                  {(exams || []).map(ex => (
+                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={styles.label}>Priority</label>
-              <select
-                style={styles.select}
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => { setShowForm(false); setTitle(''); }}
+                style={{
+                  padding: '8px 16px', fontSize: 14, fontWeight: 500,
+                  backgroundColor: '#ffffff', color: '#475569',
+                  border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer',
+                }}
               >
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-            <div>
-              <label style={styles.label}>Exam (optional)</label>
-              <select
-                style={styles.select}
-                value={examId}
-                onChange={(e) => setExamId(e.target.value)}
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  padding: '8px 20px', fontSize: 14, fontWeight: 600,
+                  backgroundColor: '#14b8a6', color: '#ffffff',
+                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                }}
               >
-                <option value="">No exam</option>
-                {(exams || []).map(ex => (
-                  <option key={ex.id} value={ex.id}>{ex.name}</option>
-                ))}
-              </select>
+                Add Task
+              </button>
             </div>
-          </div>
-          <div style={styles.formActions}>
-            <button type="button" style={styles.cancelBtn} onClick={handleCancel}>
-              <X size={14} />
-              Cancel
-            </button>
-            <button type="submit" style={styles.submitBtn}>
-              Add Task
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       )}
 
+      {/* Task List */}
       {sortedTasks.length === 0 ? (
         <EmptyState
           emoji="📋"
-          title={filter === 'today' ? 'No tasks for today' : 'No tasks yet'}
-          subtitle="Add a task to get started"
+          title={filter === 'today' ? "No tasks for today" : filter === 'pending' ? "All caught up!" : "No tasks yet"}
+          subtitle={filter === 'pending' ? "Great job completing your tasks!" : "Use quick-add buttons above or click Add Task"}
         />
       ) : (
-        <div>
-          {sortedTasks.map((task) => (
-            <div key={task.id} style={styles.taskCard}>
-              <button
-                style={styles.checkboxBtn}
-                onClick={() => toggleTask(task.id, task.completed)}
-                aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sortedTasks.map((task) => {
+            const overdue = isOverdue(task.due_date) && !task.completed;
+            return (
+              <div
+                key={task.id}
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: overdue ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                  borderLeft: overdue ? '3px solid #ef4444' : '1px solid #e2e8f0',
+                  borderRadius: overdue ? '4px 12px 12px 4px' : 12,
+                  padding: '14px 16px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  transition: 'border-color 0.15s',
+                  opacity: task.completed ? 0.7 : 1,
+                }}
               >
-                {task.completed ? (
-                  <CheckSquare size={20} color="#14b8a6" />
-                ) : (
-                  <Square size={20} color="#94a3b8" />
-                )}
-              </button>
-              <div style={styles.taskContent}>
-                <p style={styles.taskTitle(task.completed)}>{task.title}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  {task.due_date && (
-                    <span style={styles.taskDueDate}>{task.due_date}</span>
+                <button
+                  onClick={() => toggleTask(task.id, task.completed)}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                  aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+                >
+                  {task.completed ? (
+                    <CheckSquare size={20} color="#14b8a6" />
+                  ) : (
+                    <Square size={20} color={overdue ? '#ef4444' : '#94a3b8'} />
                   )}
-                  {task.exam_id && examMap[task.exam_id] && (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 3,
-                      fontSize: 11, fontWeight: 600, color: '#6366f1',
-                      background: '#eef2ff', padding: '1px 8px', borderRadius: 6,
-                    }}>
-                      <GraduationCap size={10} />
-                      {examMap[task.exam_id].name}
-                    </span>
-                  )}
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontSize: 14, fontWeight: 500, margin: 0,
+                    color: task.completed ? '#94a3b8' : '#1e293b',
+                    textDecoration: task.completed ? 'line-through' : 'none',
+                  }}>
+                    {task.title}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                    {task.due_date && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 500,
+                        color: overdue ? '#ef4444' : '#94a3b8',
+                        display: 'flex', alignItems: 'center', gap: 3,
+                      }}>
+                        {overdue && <AlertTriangle size={10} />}
+                        <Calendar size={10} />
+                        {formatDate(task.due_date)}
+                      </span>
+                    )}
+                    {task.due_time && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: '#14b8a6',
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        backgroundColor: '#e0f7f0',
+                        padding: '1px 7px',
+                        borderRadius: 4,
+                      }}>
+                        <Clock size={10} />
+                        {formatTime(task.due_time)}
+                      </span>
+                    )}
+                    {task.exam_id && examMap[task.exam_id] && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        fontSize: 10, fontWeight: 600, color: '#6366f1',
+                        background: '#eef2ff', padding: '1px 8px', borderRadius: 6,
+                      }}>
+                        <GraduationCap size={10} />
+                        {examMap[task.exam_id].name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <PriorityBadge priority={task.priority} />
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    onMouseEnter={() => setHoveredDelete(task.id)}
+                    onMouseLeave={() => setHoveredDelete(null)}
+                    style={{
+                      background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+                      color: hoveredDelete === task.id ? '#ef4444' : '#94a3b8',
+                      display: 'flex', alignItems: 'center',
+                      transition: 'color 0.15s ease',
+                    }}
+                    aria-label="Delete task"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
-              <div style={styles.taskRight}>
-                <PriorityBadge priority={task.priority} />
-                <button
-                  style={{
-                    ...styles.deleteBtn,
-                    color: hoveredDelete === task.id ? '#ef4444' : '#64748b',
-                  }}
-                  onClick={() => deleteTask(task.id)}
-                  onMouseEnter={() => setHoveredDelete(task.id)}
-                  onMouseLeave={() => setHoveredDelete(null)}
-                  aria-label="Delete task"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -533,12 +533,17 @@ export default function CurrentAffairs() {
                 </div>
                 <div>
                   <label style={labelStyle}>Date</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    style={inputStyle}
-                  />
+                  <div
+                    onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+                    style={{ ...inputStyle, cursor: 'pointer', padding: 0 }}
+                  >
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      style={{ border: 'none', background: 'transparent', fontSize: 14, color: '#1e293b', cursor: 'pointer', outline: 'none', width: '100%', padding: '10px 12px' }}
+                    />
+                  </div>
                 </div>
               </div>
               <div>
@@ -604,7 +609,9 @@ export default function CurrentAffairs() {
           </button>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
-          <div style={{
+          <div
+            onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+            style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
@@ -612,6 +619,7 @@ export default function CurrentAffairs() {
             backgroundColor: dateFilter === 'Custom' ? '#14b8a6' : '#f1f5f9',
             borderRadius: 8,
             transition: 'background-color 0.15s',
+            cursor: 'pointer',
           }}>
             <Calendar size={13} color={dateFilter === 'Custom' ? '#ffffff' : '#475569'} />
             <input

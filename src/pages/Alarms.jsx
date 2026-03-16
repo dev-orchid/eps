@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 const DAY_NAME_MAP = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
 
 function formatTime12(timeStr) {
@@ -415,12 +416,21 @@ export default function Alarms() {
               <label style={{ display: 'block', fontSize: 13, color: '#94a3b8', marginBottom: 4, fontWeight: 500 }}>
                 Time
               </label>
-              <input
-                type="time"
-                value={alarmTime}
-                onChange={(e) => setAlarmTime(e.target.value)}
-                style={inputStyle}
-              />
+              <div
+                onClick={(e) => { e.currentTarget.querySelector('input').showPicker() }}
+                style={{ ...inputStyle, cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
+              >
+                <input
+                  type="time"
+                  value={alarmTime}
+                  onChange={(e) => setAlarmTime(e.target.value)}
+                  style={{
+                    border: 'none', background: 'transparent', fontSize: 14,
+                    color: '#1e293b', cursor: 'pointer',
+                    outline: 'none', width: '100%', padding: '10px 12px',
+                  }}
+                />
+              </div>
             </div>
 
             <div style={{ marginBottom: 16 }}>
