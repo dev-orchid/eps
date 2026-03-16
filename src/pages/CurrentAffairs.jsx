@@ -5,7 +5,7 @@ import { useTasks } from '../hooks/useTasks'
 import { fetchGoogleNews } from '../lib/newsFetcher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
-import { Plus, Trash2, BookOpen, CheckSquare, Eye, EyeOff, ExternalLink, X, Loader, Globe, RefreshCw, Rss } from 'lucide-react'
+import { Plus, Trash2, BookOpen, CheckSquare, Eye, EyeOff, ExternalLink, X, Loader, Globe, RefreshCw, Rss, Calendar } from 'lucide-react'
 
 // UPSC GS Paper mapped categories
 const CATEGORIES = [
@@ -48,7 +48,10 @@ const GS_PAPER_MAP = {
   'General': 'Prelims',
 }
 
-const todayStr = () => new Date().toISOString().split('T')[0]
+const todayStr = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 function formatDateHeading(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -79,6 +82,7 @@ export default function CurrentAffairs() {
   const [showForm, setShowForm] = useState(false)
   const [filterCategory, setFilterCategory] = useState('All')
   const [dateFilter, setDateFilter] = useState('Today')
+  const [customDate, setCustomDate] = useState(todayStr())
   const [formData, setFormData] = useState({
     title: '',
     category: 'General',
@@ -178,7 +182,10 @@ export default function CurrentAffairs() {
     filtered = filtered.filter((a) => isToday(a.date))
   } else if (dateFilter === 'This Week') {
     filtered = filtered.filter((a) => isThisWeek(a.date))
+  } else if (dateFilter === 'Custom') {
+    filtered = filtered.filter((a) => a.date === customDate)
   }
+  // 'All' shows everything — no date filter
 
   // Stats
   const todayAffairs = affairs.filter((a) => isToday(a.date))
@@ -576,7 +583,7 @@ export default function CurrentAffairs() {
       )}
 
       {/* Date filter tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         {['Today', 'This Week', 'All'].map((tab) => (
           <button
             key={tab}
@@ -596,6 +603,39 @@ export default function CurrentAffairs() {
             {tab}
           </button>
         ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 6px 4px 10px',
+            backgroundColor: dateFilter === 'Custom' ? '#14b8a6' : '#f1f5f9',
+            borderRadius: 8,
+            transition: 'background-color 0.15s',
+          }}>
+            <Calendar size={13} color={dateFilter === 'Custom' ? '#ffffff' : '#475569'} />
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => {
+                setCustomDate(e.target.value)
+                setDateFilter('Custom')
+              }}
+              onClick={() => setDateFilter('Custom')}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                fontSize: 13,
+                fontWeight: 600,
+                color: dateFilter === 'Custom' ? '#ffffff' : '#475569',
+                cursor: 'pointer',
+                outline: 'none',
+                padding: '3px 4px',
+                colorScheme: dateFilter === 'Custom' ? 'dark' : 'light',
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Affairs list */}
