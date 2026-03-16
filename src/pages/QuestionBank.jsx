@@ -290,7 +290,8 @@ export default function QuestionBank() {
       {/* Request from Claude Panel */}
       {showGenerate && (() => {
         const genSub = subjects.find(s => s.id === genConfig.subject_id)
-        const prompt = `Generate ${genConfig.count} ${genConfig.difficulty} difficulty MCQ questions for the subject "${genSub?.name || 'all subjects'}" (${genSub?.paper || 'General Studies'})${genConfig.pyq_year ? `, in the style of ${genConfig.pyq_exam} ${genConfig.pyq_year}` : ''} for exam prep. Use the bulk import format:
+        const examName = genConfig.pyq_exam || 'UPSC Prelims'
+        const prompt = `Generate ${genConfig.count} ${genConfig.difficulty} difficulty MCQ questions for the subject "${genSub?.name || 'all subjects'}" (${genSub?.paper || 'General Studies'}) for the ${examName} exam${genConfig.pyq_year ? ` in the style of ${examName} ${genConfig.pyq_year}` : ''}. Use the bulk import format:
 
 Q: question text
 A: option A
@@ -300,10 +301,11 @@ D: option D
 Answer: B
 Explanation: detailed explanation
 Subject: ${genSub?.name || 'General'}
-Difficulty: ${genConfig.difficulty}${genConfig.pyq_year ? `\nYear: ${genConfig.pyq_year}\nExam: ${genConfig.pyq_exam}` : ''}
+Difficulty: ${genConfig.difficulty}
+Exam: ${examName}${genConfig.pyq_year ? `\nYear: ${genConfig.pyq_year}` : ''}
 ---
 
-Generate real exam-quality questions with authentic UPSC/State PSC patterns. Include statement-based, match-the-following, and negative framing patterns. Each explanation must cite specific facts.`
+Generate real exam-quality questions with authentic ${examName} patterns. Include statement-based, match-the-following, and negative framing patterns. Each explanation must cite specific facts.`
 
         return (
           <div style={{
@@ -327,7 +329,14 @@ Generate real exam-quality questions with authentic UPSC/State PSC patterns. Inc
                 <label style={labelStyle}>Subject</label>
                 <select value={genConfig.subject_id} onChange={e => setGenConfig({ ...genConfig, subject_id: e.target.value })} style={inputStyle}>
                   <option value="">All Subjects</option>
-                  {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.paper})</option>)}
+                  {(() => {
+                    const examPaperMap = {
+                      'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
+                    }
+                    const paperFilter = examPaperMap[genConfig.pyq_exam]
+                    const filtered = paperFilter ? subjects.filter(s => s.paper === paperFilter) : subjects
+                    return filtered.map(s => <option key={s.id} value={s.id}>{s.name} ({s.paper})</option>)
+                  })()}
                 </select>
               </div>
               <div>
@@ -353,7 +362,7 @@ Generate real exam-quality questions with authentic UPSC/State PSC patterns. Inc
               <div>
                 <label style={labelStyle}>Exam</label>
                 <select value={genConfig.pyq_exam} onChange={e => setGenConfig({ ...genConfig, pyq_exam: e.target.value })} style={inputStyle}>
-                  {['UPSC Prelims', 'UPSC Mains', 'BPSC', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL'].map(e => (
+                  {['UPSC Prelims', 'UPSC Mains', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL'].map(e => (
                     <option key={e} value={e}>{e}</option>
                   ))}
                 </select>

@@ -9,14 +9,20 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner'
 
 // ─── Constants ───
-const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science']
+const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science', 'BPSSC SI Mains']
+
+// Group papers under exams for display
+const EXAM_GROUPS = [
+  { key: 'UPSC / State PSC', papers: ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science'], color: '#6366f1', desc: 'UPSC CSE, BPSC, UPPSC, MPSC & other State PSCs' },
+  { key: 'Bihar Daroga Mains (BPSSC SI)', papers: ['BPSSC SI Mains'], color: '#78716c', desc: 'Sub-Inspector Mains Examination' },
+]
 const DIFFICULTIES = [
   { key: 'easy', label: 'Easy', desc: 'Basics & fundamentals', color: '#22c55e', bg: '#f0fdf4' },
   { key: 'medium', label: 'Medium', desc: 'Exam-level questions', color: '#f59e0b', bg: '#fffbeb' },
   { key: 'hard', label: 'Hard', desc: 'Advanced & tricky', color: '#ef4444', bg: '#fef2f2' },
 ]
 const COUNTS = [10, 15, 20, 30, 50]
-const EXAMS = ['All', 'UPSC Prelims', 'BPSC', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL']
+const EXAMS = ['All', 'UPSC Prelims', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL']
 const YEARS = ['', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016']
 const TABS = [
   { key: 'series', label: 'Test Series', icon: Layers },
@@ -32,11 +38,13 @@ const PAPER_META = {
   'GS-IV': { title: 'General Studies IV', desc: 'Ethics, Integrity, Aptitude', color: '#f59e0b', bg: '#fffbeb', duration: 120, questions: 50, marks: 200 },
   'Prelims': { title: 'Prelims Full Mock', desc: 'Complete UPSC Prelims', color: '#ef4444', bg: '#fef2f2', duration: 120, questions: 100, marks: 200 },
   'Science': { title: 'Science Series', desc: 'Physics, Chemistry, Biology', color: '#8b5cf6', bg: '#f5f3ff', duration: 90, questions: 50, marks: 200 },
+  'BPSSC SI Mains': { title: 'Bihar Daroga Mains', desc: 'BPSSC SI Mains Subjects', color: '#78716c', bg: '#f5f5f4', duration: 120, questions: 100, marks: 200 },
 }
 
 const PYQ_EXAMS = [
   { key: 'UPSC Prelims', label: 'UPSC Prelims', color: '#ef4444' },
   { key: 'BPSC', label: 'BPSC', color: '#f59e0b' },
+  { key: 'Bihar Daroga Mains (BPSSC SI)', label: 'Bihar Daroga Mains', color: '#78716c' },
   { key: 'UPPSC', label: 'UPPSC', color: '#0ea5e9' },
   { key: 'MPSC', label: 'MPSC', color: '#14b8a6' },
   { key: 'SSC CGL', label: 'SSC CGL', color: '#8b5cf6' },
@@ -68,6 +76,8 @@ export default function QuizHome() {
   const navigate = useNavigate()
   const { subjects, attempts, loading, generateQuiz, getQuestionCounts, getAttemptedCounts } = useQuiz()
   const [activeTab, setActiveTab] = useState('series')
+  const [expandedExamSubject, setExpandedExamSubject] = useState(null)
+  const [expandedMockExam, setExpandedMockExam] = useState(null)
   const [generating, setGenerating] = useState(null) // holds the key of the generating card
   const [genError, setGenError] = useState(null)
   const [questionCounts, setQuestionCounts] = useState({})
@@ -223,126 +233,152 @@ export default function QuizHome() {
         <div>
           {/* Full-Length Mock Tests */}
           <SectionHeader icon={Award} title="Full Length Mock Tests" subtitle="Simulate the real exam experience" />
-          <div className="test-cards-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 32,
-          }}>
-            {PAPERS.map(paper => {
-              const meta = PAPER_META[paper]
-              const available = getPaperQuestionCount(paper)
-              const best = getBestAttempt(paper, null)
-              const attemptCt = getAttemptCount(paper, null)
-              const isGenerating = generating === `mock-${paper}`
-              // Count attempted questions across all subjects in this paper
-              const paperAttempted = subjects
-                .filter(s => s.paper === paper)
-                .reduce((sum, s) => sum + (attemptedCounts[s.id] || 0), 0)
-              return (
-                <MockTestCard
-                  key={paper}
-                  paper={paper}
-                  meta={meta}
-                  available={available}
-                  attempted={Math.min(paperAttempted, available)}
-                  best={best}
-                  attemptCount={attemptCt}
-                  isGenerating={isGenerating}
-                  onStart={() => handleStart({
-                    paper, count: available, // Load ALL available questions
-                    difficulty: 'all', quiz_type: 'full_mock',
-                  }, `mock-${paper}`)}
-                />
-              )
-            })}
-          </div>
-
-          {/* Topic-wise Tests */}
-          <SectionHeader icon={BookOpen} title="Topic-wise Tests" subtitle="Master individual subjects" />
-          <div className="topic-cards-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 32,
-          }}>
-            {subjects.map(sub => {
-              const count = questionCounts[sub.id] || 0
-              const attempted = Math.min(attemptedCounts[sub.id] || 0, count)
-              const remaining = count - attempted
-              const best = getBestAttempt(null, sub.id)
-              const attemptCt = getAttemptCount(null, sub.id)
-              const paperMeta = PAPER_META[sub.paper]
-              const isGenerating = generating === `topic-${sub.id}`
-              // Set size: 20 questions per set, or all remaining if fewer
-              const setSize = Math.min(20, count)
-              return (
-                <TopicTestCard
-                  key={sub.id}
-                  subject={sub}
-                  count={count}
-                  attempted={attempted}
-                  remaining={remaining}
-                  best={best}
-                  attemptCount={attemptCt}
-                  paperColor={paperMeta?.color || C.primary}
-                  isGenerating={isGenerating}
-                  onStart={() => handleStart({
-                    subject_id: sub.id, paper: sub.paper,
-                    count: setSize,
-                    difficulty: 'medium', quiz_type: 'subject_practice',
-                    exclude_attempted: remaining > 0, // Prioritize fresh questions
-                  }, `topic-${sub.id}`)}
-                />
-              )
-            })}
-          </div>
+          {EXAM_GROUPS.map(examGroup => {
+            const examPapers = examGroup.papers.filter(p => PAPER_META[p])
+            if (examPapers.length === 0) return null
+            const totalQ = examPapers.reduce((sum, p) => sum + getPaperQuestionCount(p), 0)
+            const isMockOpen = expandedMockExam === examGroup.key
+            return (
+              <div key={examGroup.key} style={{ marginBottom: 12 }}>
+                <div
+                  onClick={() => setExpandedMockExam(isMockOpen ? null : examGroup.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '12px 16px', backgroundColor: isMockOpen ? `${examGroup.color}10` : C.white,
+                    border: `1px solid ${isMockOpen ? examGroup.color + '40' : C.border}`,
+                    borderRadius: isMockOpen ? '10px 10px 0 0' : 10,
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    userSelect: 'none',
+                  }}
+                >
+                  <div style={{ width: 6, height: 32, borderRadius: 3, backgroundColor: examGroup.color, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: C.navy }}>{examGroup.key}</div>
+                    <div style={{ fontSize: 11, color: C.hint }}>{examGroup.desc}</div>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: examGroup.color, marginRight: 8 }}>{totalQ} questions</span>
+                  <ChevronDown size={18} color={C.hint} style={{
+                    transition: 'transform 0.2s',
+                    transform: isMockOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }} />
+                </div>
+                {isMockOpen && (
+                  <div style={{
+                    border: `1px solid ${examGroup.color}40`, borderTop: 'none',
+                    borderRadius: '0 0 10px 10px', padding: 12,
+                    backgroundColor: C.white,
+                  }}>
+                    <div className="test-cards-grid" style={{
+                      display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14,
+                    }}>
+                      {examPapers.map(paper => {
+                        const meta = PAPER_META[paper]
+                        const available = getPaperQuestionCount(paper)
+                        const best = getBestAttempt(paper, null)
+                        const attemptCt = getAttemptCount(paper, null)
+                        const isGenerating = generating === `mock-${paper}`
+                        const paperAttempted = subjects
+                          .filter(s => s.paper === paper)
+                          .reduce((sum, s) => sum + (attemptedCounts[s.id] || 0), 0)
+                        return (
+                          <MockTestCard
+                            key={paper}
+                            paper={paper}
+                            meta={meta}
+                            available={available}
+                            attempted={Math.min(paperAttempted, available)}
+                            best={best}
+                            attemptCount={attemptCt}
+                            isGenerating={isGenerating}
+                            onStart={() => handleStart({
+                              paper, count: available,
+                              difficulty: 'all', quiz_type: 'full_mock',
+                            }, `mock-${paper}`)}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          <div style={{ marginBottom: 32 }} />
         </div>
       )}
 
       {/* ─── SUBJECT PRACTICE TAB ─── */}
       {activeTab === 'subject' && (
         <div>
-          {PAPERS.map(paper => {
-            const paperSubjects = subjects.filter(s => s.paper === paper)
-            if (paperSubjects.length === 0) return null
-            const meta = PAPER_META[paper]
+          {EXAM_GROUPS.map(examGroup => {
+            const examSubjects = subjects.filter(s => examGroup.papers.includes(s.paper))
+            if (examSubjects.length === 0) return null
+            const totalQ = examSubjects.reduce((sum, s) => sum + (questionCounts[s.id] || 0), 0)
+            const isOpen = expandedExamSubject === examGroup.key
             return (
-              <div key={paper} style={{ marginBottom: 28 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
-                }}>
-                  <div style={{
-                    width: 8, height: 28, borderRadius: 4, background: meta?.color || C.primary,
-                  }} />
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{paper}</div>
-                    <div style={{ fontSize: 12, color: C.hint }}>{meta?.desc}</div>
+              <div key={examGroup.key} style={{ marginBottom: 12 }}>
+                <div
+                  onClick={() => setExpandedExamSubject(isOpen ? null : examGroup.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '12px 16px', backgroundColor: isOpen ? `${examGroup.color}10` : C.white,
+                    border: `1px solid ${isOpen ? examGroup.color + '40' : C.border}`,
+                    borderRadius: isOpen ? '10px 10px 0 0' : 10,
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    userSelect: 'none',
+                  }}
+                >
+                  <div style={{ width: 6, height: 32, borderRadius: 3, backgroundColor: examGroup.color, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{examGroup.key}</div>
+                    <div style={{ fontSize: 11, color: C.hint }}>{examGroup.desc}</div>
                   </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: examGroup.color, marginRight: 8 }}>{totalQ} questions</span>
+                  <ChevronDown size={18} color={C.hint} style={{
+                    transition: 'transform 0.2s',
+                    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {paperSubjects.map(sub => {
-                    const count = questionCounts[sub.id] || 0
-                    const attempted = Math.min(attemptedCounts[sub.id] || 0, count)
-                    const remaining = count - attempted
-                    const best = getBestAttempt(null, sub.id)
-                    const attemptCt = getAttemptCount(null, sub.id)
-                    const isGenerating = generating === `subj-${sub.id}`
-                    return (
-                      <SubjectRow
-                        key={sub.id}
-                        subject={sub}
-                        count={count}
-                        attempted={attempted}
-                        remaining={remaining}
-                        best={best}
-                        attemptCount={attemptCt}
-                        color={meta?.color || C.primary}
-                        isGenerating={isGenerating}
-                        onStart={() => handleStart({
-                          subject_id: sub.id, paper: sub.paper,
-                          count: Math.min(20, count || 20),
-                          difficulty: 'medium', quiz_type: 'subject_practice',
-                          exclude_attempted: remaining > 0,
-                        }, `subj-${sub.id}`)}
-                      />
-                    )
-                  })}
-                </div>
+                {isOpen && (
+                  <div style={{
+                    border: `1px solid ${examGroup.color}40`, borderTop: 'none',
+                    borderRadius: '0 0 10px 10px', padding: 12,
+                    backgroundColor: C.white,
+                  }}>
+                    <div className="topic-cards-grid" style={{
+                      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12,
+                    }}>
+                      {examSubjects.map(sub => {
+                        const count = questionCounts[sub.id] || 0
+                        const attempted = Math.min(attemptedCounts[sub.id] || 0, count)
+                        const remaining = count - attempted
+                        const best = getBestAttempt(null, sub.id)
+                        const paperMeta = PAPER_META[sub.paper]
+                        const isGenerating = generating === `topic-${sub.id}`
+                        const setSize = Math.min(20, count)
+                        return (
+                          <TopicTestCard
+                            key={sub.id}
+                            subject={sub}
+                            count={count}
+                            attempted={attempted}
+                            remaining={remaining}
+                            best={best}
+                            attemptCount={getAttemptCount(null, sub.id)}
+                            paperColor={paperMeta?.color || examGroup.color}
+                            isGenerating={isGenerating}
+                            onStart={() => handleStart({
+                              subject_id: sub.id, paper: sub.paper,
+                              count: setSize,
+                              difficulty: 'medium', quiz_type: 'subject_practice',
+                              exclude_attempted: remaining > 0,
+                            }, `topic-${sub.id}`)}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}
