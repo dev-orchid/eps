@@ -34,7 +34,8 @@ export function useQuiz() {
   }, [fetchSubjects, fetchAttempts])
 
   // Generate quiz by randomly picking questions from the bank
-  const generateQuiz = async ({ subject_id, paper, count = 10, difficulty, quiz_type = 'subject_practice', pyq_exam, pyq_year }) => {
+  // exclude_attempted: if true, prioritize questions user hasn't answered yet
+  const generateQuiz = async ({ subject_id, paper, count = 10, difficulty, quiz_type = 'subject_practice', pyq_exam, pyq_year, exclude_attempted = false }) => {
     setError(null)
 
     // Build query to fetch random questions
@@ -77,10 +78,30 @@ export function useQuiz() {
       return { error: msg }
     }
 
-    // Randomly pick 'count' questions
-    const shuffled = [...allQuestions].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, Math.min(count, shuffled.length))
-    const questionIds = selected.map(q => q.id)
+    // Get previously attempted question IDs if exclude_attempted is enabled
+    let attemptedIds = new Set()
+    if (exclude_attempted && user) {
+      const { data: prevAnswers } = await supabase
+        .from('quiz_answers')
+        .select('question_id')
+        .eq('user_id', user.id)
+      if (prevAnswers) {
+        attemptedIds = new Set(prevAnswers.map(a => a.question_id))
+      }
+    }
+
+    // Split into unattempted and attempted, prioritize unattempted
+    const allIds = allQuestions.map(q => q.id)
+    let unattempted = allIds.filter(id => !attemptedIds.has(id))
+    let attempted = allIds.filter(id => attemptedIds.has(id))
+
+    // Shuffle both pools
+    unattempted = unattempted.sort(() => Math.random() - 0.5)
+    attempted = attempted.sort(() => Math.random() - 0.5)
+
+    // Pick from unattempted first, then fill with attempted if needed
+    const selected = [...unattempted, ...attempted].slice(0, Math.min(count, allIds.length))
+    const questionIds = selected
 
     // Fetch full question data (without correct_option for the client)
     const { data: questions, error: qErr } = await supabase
@@ -186,6 +207,29 @@ export function useQuiz() {
     return counts
   }, [])
 
+  // Get count of unique questions attempted by user per subject
+  const getAttemptedCounts = useCallback(async () => {
+    if (!user) return {}
+    const { data, error: err } = await supabase
+      .from('quiz_answers')
+      .select('question_id, quiz_questions!inner(subject_id)')
+      .eq('user_id', user.id)
+    if (err) return {}
+    // Count unique question_ids per subject
+    const seen = {}
+    const counts = {}
+    ;(data || []).forEach(a => {
+      const subId = a.quiz_questions?.subject_id
+      if (!subId) return
+      if (!seen[subId]) seen[subId] = new Set()
+      if (!seen[subId].has(a.question_id)) {
+        seen[subId].add(a.question_id)
+        counts[subId] = (counts[subId] || 0) + 1
+      }
+    })
+    return counts
+  }, [user?.id])
+
   return {
     subjects,
     attempts,
@@ -196,6 +240,7 @@ export function useQuiz() {
     submitAnswer,
     completeAttempt,
     getQuestionCounts,
+    getAttemptedCounts,
     refetch: fetchAttempts,
   }
 }
