@@ -54,10 +54,18 @@ export default function QuestionBank() {
 
   const fetchQuestions = async () => {
     setLoading(true)
-    let query = supabase.from('quiz_questions').select('*').order('created_at', { ascending: false })
-    if (filterSubject) query = query.eq('subject_id', filterSubject)
-    const { data } = await query
-    setQuestions(data || [])
+    let allData = []
+    const pageSize = 1000
+    let from = 0
+    while (true) {
+      let query = supabase.from('quiz_questions').select('*').order('created_at', { ascending: false })
+      if (filterSubject) query = query.eq('subject_id', filterSubject)
+      const { data } = await query.range(from, from + pageSize - 1)
+      allData = allData.concat(data || [])
+      if (!data || data.length < pageSize) break
+      from += pageSize
+    }
+    setQuestions(allData)
     setLoading(false)
   }
 

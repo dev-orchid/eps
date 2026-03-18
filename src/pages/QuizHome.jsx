@@ -79,6 +79,7 @@ export default function QuizHome() {
   const [expandedExamSubject, setExpandedExamSubject] = useState(null)
   const [expandedMockExam, setExpandedMockExam] = useState(null)
   const [generating, setGenerating] = useState(null) // holds the key of the generating card
+  const [generatingSet, setGeneratingSet] = useState(null) // holds set number being generated
   const [genError, setGenError] = useState(null)
   const [questionCounts, setQuestionCounts] = useState({})
   const [attemptedCounts, setAttemptedCounts] = useState({})
@@ -137,6 +138,7 @@ export default function QuizHome() {
     setGenError(null)
     const result = await generateQuiz(config)
     setGenerating(null)
+    setGeneratingSet(null)
     if (result.error) { setGenError(result.error); return }
     navigate('/quiz/play', { state: result.data })
   }
@@ -355,7 +357,6 @@ export default function QuizHome() {
                         const best = getBestAttempt(null, sub.id)
                         const paperMeta = PAPER_META[sub.paper]
                         const isGenerating = generating === `topic-${sub.id}`
-                        const setSize = Math.min(20, count)
                         return (
                           <TopicTestCard
                             key={sub.id}
@@ -367,12 +368,19 @@ export default function QuizHome() {
                             attemptCount={getAttemptCount(null, sub.id)}
                             paperColor={paperMeta?.color || examGroup.color}
                             isGenerating={isGenerating}
-                            onStart={() => handleStart({
-                              subject_id: sub.id, paper: sub.paper,
-                              count: setSize,
-                              difficulty: 'medium', quiz_type: 'subject_practice',
-                              exclude_attempted: remaining > 0,
-                            }, `topic-${sub.id}`)}
+                            generatingSet={isGenerating ? generatingSet : null}
+                            onStartSet={(setNum) => {
+                              const SET_SIZE = 50
+                              const totalSets = Math.ceil(count / SET_SIZE)
+                              const qsInSet = setNum < totalSets ? SET_SIZE : count - (totalSets - 1) * SET_SIZE
+                              setGeneratingSet(setNum)
+                              handleStart({
+                                subject_id: sub.id, paper: sub.paper,
+                                count: qsInSet,
+                                difficulty: 'medium', quiz_type: 'subject_practice',
+                                set_number: totalSets > 1 ? setNum : undefined,
+                              }, `topic-${sub.id}`)
+                            }}
                           />
                         )
                       })}
@@ -834,7 +842,9 @@ function MockTestCard({ paper, meta, available, attempted = 0, best, attemptCoun
   )
 }
 
-function TopicTestCard({ subject, count, attempted = 0, remaining = 0, best, attemptCount, paperColor, isGenerating, onStart }) {
+function TopicTestCard({ subject, count, attempted = 0, remaining = 0, best, attemptCount, paperColor, isGenerating, generatingSet, onStartSet }) {
+  const SET_SIZE = 50
+  const totalSets = count > 0 ? Math.ceil(count / SET_SIZE) : 0
   const score = best ? Number(best.score_percentage) : null
   const scoreColor = score !== null ? (score >= 70 ? C.green : score >= 40 ? C.amber : C.red) : null
   const progressPct = count > 0 ? Math.round((attempted / count) * 100) : 0
@@ -864,9 +874,7 @@ function TopicTestCard({ subject, count, attempted = 0, remaining = 0, best, att
         <div style={{ fontSize: 14, fontWeight: 600, color: C.navy, marginBottom: 4 }}>{subject.name}</div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
           <span style={{ fontSize: 11, color: C.hint }}>{count} questions</span>
-          {remaining > 0 && attempted > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.primary }}>{remaining} new</span>
-          )}
+          {totalSets > 1 && <span style={{ fontSize: 11, color: C.hint }}>· {totalSets} sets</span>}
         </div>
         {/* Progress bar */}
         {count > 0 && attempted > 0 && (
@@ -885,27 +893,59 @@ function TopicTestCard({ subject, count, attempted = 0, remaining = 0, best, att
         )}
         {count > 0 && attempted === 0 && <div style={{ marginBottom: 10 }} />}
       </div>
-      <button onClick={onStart} disabled={isGenerating || count === 0} style={{
-        width: '100%', padding: '8px', borderRadius: 8, border: 'none',
-        background: count === 0 ? C.bg : C.primaryBg,
-        color: count === 0 ? C.hint : C.primary,
-        fontSize: 12, fontWeight: 600, cursor: count === 0 || isGenerating ? 'default' : 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-        transition: 'all 0.15s',
-      }}
-        onMouseEnter={e => { if (count > 0) { e.currentTarget.style.background = C.primary; e.currentTarget.style.color = C.white } }}
-        onMouseLeave={e => { if (count > 0) { e.currentTarget.style.background = C.primaryBg; e.currentTarget.style.color = C.primary } }}
-      >
-        {isGenerating ? (
-          <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-        ) : count === 0 ? 'No Questions' : remaining > 0 && attempted > 0 ? (
-          <><Play size={12} /> Practice {Math.min(20, remaining)} New</>
-        ) : allDone ? (
-          <><RotateCcw size={12} /> Revise</>
-        ) : (
-          <><Play size={12} /> Practice</>
-        )}
-      </button>
+      {count === 0 ? (
+        <button disabled style={{
+          width: '100%', padding: '8px', borderRadius: 8, border: 'none',
+          background: C.bg, color: C.hint,
+          fontSize: 12, fontWeight: 600, cursor: 'default',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+        }}>No Questions</button>
+      ) : totalSets <= 1 ? (
+        <button onClick={() => onStartSet(1)} disabled={isGenerating} style={{
+          width: '100%', padding: '8px', borderRadius: 8, border: 'none',
+          background: C.primaryBg, color: C.primary,
+          fontSize: 12, fontWeight: 600, cursor: isGenerating ? 'default' : 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          transition: 'all 0.15s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = C.primary; e.currentTarget.style.color = C.white }}
+          onMouseLeave={e => { e.currentTarget.style.background = C.primaryBg; e.currentTarget.style.color = C.primary }}
+        >
+          {isGenerating ? (
+            <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <><Play size={12} /> Practice ({count} Qs)</>
+          )}
+        </button>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {Array.from({ length: totalSets }, (_, i) => {
+            const setNum = i + 1
+            const setStart = i * SET_SIZE + 1
+            const setEnd = Math.min((i + 1) * SET_SIZE, count)
+            const qsInSet = setEnd - setStart + 1
+            const isThisGenerating = isGenerating && generatingSet === setNum
+            return (
+              <button key={setNum} onClick={() => onStartSet(setNum)} disabled={isGenerating} style={{
+                width: '100%', padding: '6px 8px', borderRadius: 6, border: 'none',
+                background: C.primaryBg, color: C.primary,
+                fontSize: 11, fontWeight: 600, cursor: isGenerating ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                transition: 'all 0.15s',
+              }}
+                onMouseEnter={e => { if (!isGenerating) { e.currentTarget.style.background = C.primary; e.currentTarget.style.color = C.white } }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.primaryBg; e.currentTarget.style.color = C.primary }}
+              >
+                {isThisGenerating ? (
+                  <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <><Play size={10} /> Set {setNum} <span style={{ fontWeight: 400, opacity: 0.7 }}>({qsInSet} Qs)</span></>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -960,7 +1000,7 @@ function SubjectRow({ subject, count, attempted = 0, remaining = 0, best, attemp
             {isGenerating ? (
               <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
             ) : count === 0 ? 'No Qs' : remaining > 0 && attempted > 0 ? (
-              <><Play size={12} /> {Math.min(20, remaining)} New</>
+              <><Play size={12} /> {Math.min(50, remaining)} New</>
             ) : allDone ? (
               <><RotateCcw size={12} /> Revise</>
             ) : (

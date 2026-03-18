@@ -35,7 +35,7 @@ export function useQuiz() {
 
   // Generate quiz by randomly picking questions from the bank
   // exclude_attempted: if true, prioritize questions user hasn't answered yet
-  const generateQuiz = async ({ subject_id, paper, count = 10, difficulty, quiz_type = 'subject_practice', pyq_exam, pyq_year, exclude_attempted = false }) => {
+  const generateQuiz = async ({ subject_id, paper, count = 10, difficulty, quiz_type = 'subject_practice', pyq_exam, pyq_year, exclude_attempted = false, set_number }) => {
     setError(null)
 
     // Build query to fetch random questions
@@ -65,43 +65,72 @@ export function useQuiz() {
       query = query.eq('pyq_year', pyq_year)
     }
 
-    const { data: allQuestions, error: fetchErr } = await query
-
-    if (fetchErr) {
-      setError(fetchErr.message)
-      return { error: fetchErr.message }
+    // For set-based practice, order deterministically by created_at
+    if (set_number != null) {
+      query = query.order('created_at', { ascending: true })
     }
 
-    if (!allQuestions || allQuestions.length === 0) {
+    // Paginate to get all matching question IDs (Supabase default limit is 1000)
+    let allQuestions = []
+    let from = 0
+    const pageSize = 1000
+    while (true) {
+      const { data: page, error: fetchErr } = await query.range(from, from + pageSize - 1)
+      if (fetchErr) {
+        setError(fetchErr.message)
+        return { error: fetchErr.message }
+      }
+      allQuestions = allQuestions.concat(page || [])
+      if (!page || page.length < pageSize) break
+      from += pageSize
+    }
+
+    if (allQuestions.length === 0) {
       const msg = 'No questions available for this subject yet. Admin needs to add questions.'
       setError(msg)
       return { error: msg }
     }
 
-    // Get previously attempted question IDs if exclude_attempted is enabled
-    let attemptedIds = new Set()
-    if (exclude_attempted && user) {
-      const { data: prevAnswers } = await supabase
-        .from('quiz_answers')
-        .select('question_id')
-        .eq('user_id', user.id)
-      if (prevAnswers) {
-        attemptedIds = new Set(prevAnswers.map(a => a.question_id))
+    let questionIds
+
+    if (set_number != null) {
+      // Set-based: deterministic slicing (Set 1 = first 50, Set 2 = next 50, etc.)
+      const setSize = count
+      const startIdx = (set_number - 1) * setSize
+      const setIds = allQuestions.map(q => q.id).slice(startIdx, startIdx + setSize)
+      if (setIds.length === 0) {
+        const msg = 'No questions in this set.'
+        setError(msg)
+        return { error: msg }
       }
+      questionIds = setIds
+    } else {
+      // Random selection (original behavior)
+      // Get previously attempted question IDs if exclude_attempted is enabled
+      let attemptedIds = new Set()
+      if (exclude_attempted && user) {
+        const { data: prevAnswers } = await supabase
+          .from('quiz_answers')
+          .select('question_id')
+          .eq('user_id', user.id)
+        if (prevAnswers) {
+          attemptedIds = new Set(prevAnswers.map(a => a.question_id))
+        }
+      }
+
+      // Split into unattempted and attempted, prioritize unattempted
+      const allIds = allQuestions.map(q => q.id)
+      let unattempted = allIds.filter(id => !attemptedIds.has(id))
+      let attempted = allIds.filter(id => attemptedIds.has(id))
+
+      // Shuffle both pools
+      unattempted = unattempted.sort(() => Math.random() - 0.5)
+      attempted = attempted.sort(() => Math.random() - 0.5)
+
+      // Pick from unattempted first, then fill with attempted if needed
+      const selected = [...unattempted, ...attempted].slice(0, Math.min(count, allIds.length))
+      questionIds = selected
     }
-
-    // Split into unattempted and attempted, prioritize unattempted
-    const allIds = allQuestions.map(q => q.id)
-    let unattempted = allIds.filter(id => !attemptedIds.has(id))
-    let attempted = allIds.filter(id => attemptedIds.has(id))
-
-    // Shuffle both pools
-    unattempted = unattempted.sort(() => Math.random() - 0.5)
-    attempted = attempted.sort(() => Math.random() - 0.5)
-
-    // Pick from unattempted first, then fill with attempted if needed
-    const selected = [...unattempted, ...attempted].slice(0, Math.min(count, allIds.length))
-    const questionIds = selected
 
     // Fetch full question data (without correct_option for the client)
     const { data: questions, error: qErr } = await supabase
@@ -193,17 +222,27 @@ export function useQuiz() {
     await fetchAttempts()
   }
 
-  // Get question count per subject
+  // Get question count per subject (paginated to handle >1000 rows)
   const getQuestionCounts = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from('quiz_questions')
-      .select('subject_id')
-      .eq('is_active', true)
-    if (err) return {}
     const counts = {}
-    ;(data || []).forEach(q => {
-      counts[q.subject_id] = (counts[q.subject_id] || 0) + 1
-    })
+    const pageSize = 1000
+    let from = 0
+    let hasMore = true
+    while (hasMore) {
+      const { data, error: err } = await supabase
+        .from('quiz_questions')
+        .select('subject_id')
+        .eq('is_active', true)
+        .range(from, from + pageSize - 1)
+      if (err) return counts
+      ;(data || []).forEach(q => {
+        if (q.subject_id) {
+          counts[q.subject_id] = (counts[q.subject_id] || 0) + 1
+        }
+      })
+      hasMore = data && data.length === pageSize
+      from += pageSize
+    }
     return counts
   }, [])
 
