@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   GraduationCap, CheckSquare, BarChart3, Bell, BookOpen, Newspaper,
-  Target, Award, ArrowRight, Check, Star, ChevronDown, Menu, X,
-  Brain, BrainCircuit, Sparkles, Layers, Play, Clock, Zap,
-  FileText, TrendingUp, Shield, Users, BookMarked, Notebook,
+  Target, ArrowRight, Check, Star, ChevronDown, Menu, X,
+  Brain, BrainCircuit, Sparkles, Layers, Play, Clock,
+  TrendingUp, BookMarked, Notebook, Calendar,
 } from 'lucide-react'
 
 // ── Colors ──
@@ -17,105 +17,148 @@ const MUTED = '#94a3b8'
 const BORDER = '#e2e8f0'
 
 // ── Data ──
-const EXAM_TYPES = [
-  {
-    name: 'Bihar Daroga Mains (BPSSC SI)',
-    desc: 'Sub-Inspector Mains Examination',
-    subjects: ['Hindi Language', 'English Language', 'Bihar GK & History', 'Mathematics & Reasoning', 'Indian Polity', 'General Science', 'Indian Geography', 'GK & Current Affairs'],
-    color: '#78716c',
-    questions: '1000+',
-  },
-  {
-    name: 'UPSC / State PSC',
-    desc: 'UPSC CSE, BPSC, UPPSC, MPSC & all State PSCs',
-    subjects: ['GS-I: History, Geography, Society', 'GS-II: Polity, IR, Governance', 'GS-III: Economy, Science, Environment', 'GS-IV: Ethics & Aptitude', 'Prelims & CSAT'],
-    color: '#6366f1',
-    questions: '500+',
-  },
+const GS_PAPERS = [
+  { paper: 'GS-I', topics: 'History, Geography, Art & Culture, Indian Society', color: '#3b82f6', icon: BookOpen },
+  { paper: 'GS-II', topics: 'Polity, Governance, International Relations, Social Justice', color: '#22c55e', icon: Target },
+  { paper: 'GS-III', topics: 'Economy, Science & Tech, Environment, Internal Security', color: '#f59e0b', icon: TrendingUp },
+  { paper: 'GS-IV', topics: 'Ethics, Integrity, Aptitude, Case Studies', color: '#a855f7', icon: Brain },
+  { paper: 'Prelims', topics: 'Current Affairs, Static GK, CSAT', color: '#ec4899', icon: BrainCircuit },
 ]
 
-const AI_FEATURES = [
+const SUPPORTED_EXAMS = [
+  'UPSC CSE', 'BPSC', 'UPPSC', 'MPSC', 'WBPSC', 'RPSC', 'KPSC', 'BPSSC SI',
+]
+
+const CORE_FEATURES = [
   {
-    icon: Sparkles,
-    title: 'AI Question Generation',
-    desc: 'Generate exam-quality MCQs instantly using Claude AI. Get questions with authentic exam patterns — statement-based, match-the-following, and negative framing.',
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-  },
-  {
-    icon: Layers,
-    title: 'Set-wise Practice (50 Qs)',
-    desc: 'Questions organized in sets of 50. Complete Set 1, move to Set 2, and so on. Systematic coverage with no question left behind.',
-    color: '#3b82f6',
-    bg: '#eff6ff',
-  },
-  {
-    icon: Target,
-    title: 'Subject-wise Drill',
-    desc: 'Pick any subject — Hindi, English, Math, GK, Polity, Science. Each subject has dedicated question sets with difficulty levels and detailed explanations.',
-    color: '#ec4899',
-    bg: '#fdf2f8',
-  },
-  {
-    icon: BrainCircuit,
-    title: 'Exam-wise Test Series',
-    desc: 'Full-length mock tests matching real exam patterns. BPSSC SI, UPSC Prelims, BPSC — timed tests with instant scoring and analysis.',
+    icon: Newspaper,
+    title: 'Daily Current Affairs',
+    desc: 'Auto-curated news from The Hindu, Indian Express, LiveMint & more — categorized by GS Papers. Mark as read, add to study log, and create tasks from articles.',
     color: '#f59e0b',
     bg: '#fffbeb',
   },
   {
-    icon: TrendingUp,
-    title: 'Smart Progress Tracking',
-    desc: 'Track attempted vs remaining questions per subject. The system prioritizes unattempted questions so you never repeat until you have covered everything.',
+    icon: CheckSquare,
+    title: 'Smart Task Planner',
+    desc: 'Organize your syllabus into daily tasks with priority levels and exam linking. Quick templates for NCERT, Answer Writing, PYQs, Mock Tests, and Revision.',
     color: '#22c55e',
     bg: '#f0fdf4',
   },
   {
+    icon: BookOpen,
+    title: 'Study Session Logger',
+    desc: 'Log hours by GS Paper-aligned subjects — History, Polity, Economy, Geography, Ethics. Track daily & weekly totals. See exactly where your time goes.',
+    color: '#a855f7',
+    bg: '#faf5ff',
+  },
+  {
     icon: BarChart3,
-    title: 'Performance Analytics',
-    desc: 'See your score trends, subject-wise strengths and weaknesses, time per question, and accuracy rates. Data-driven preparation.',
+    title: 'Progress Analytics',
+    desc: 'Visual charts showing daily/weekly study trends, subject-wise time breakdown, and task completion rates. Data-driven preparation, not guesswork.',
     color: TEAL,
     bg: '#f0fdfa',
   },
+  {
+    icon: Calendar,
+    title: 'Exam Countdown',
+    desc: 'Track Prelims, Mains, State PSC dates with live countdown timers. Color-coded urgency — never miss a deadline or interview date.',
+    color: '#3b82f6',
+    bg: '#eff6ff',
+  },
+  {
+    icon: BookMarked,
+    title: 'Syllabus Tracker',
+    desc: 'Track topic-wise preparation status across all GS Papers — Not Started, In Progress, Revised, Done. Visual progress bars show exactly where you stand.',
+    color: '#ec4899',
+    bg: '#fdf2f8',
+  },
+  {
+    icon: Notebook,
+    title: 'Notes System',
+    desc: 'Subject-wise notes with tags, search, and pin support. Organize by GS Paper category. Quick access to revision notes when you need them.',
+    color: '#6366f1',
+    bg: '#eef2ff',
+  },
+  {
+    icon: Bell,
+    title: 'Study Alarms & Reminders',
+    desc: 'Custom recurring reminders for revision, mock tests, newspaper reading, and answer writing practice. Build consistency, not cramming.',
+    color: '#ef4444',
+    bg: '#fef2f2',
+  },
 ]
 
-const PLATFORM_FEATURES = [
-  { icon: Newspaper, title: 'Daily Current Affairs', desc: 'Auto-curated from The Hindu, Indian Express & more — sorted by GS Papers', color: '#f59e0b' },
-  { icon: CheckSquare, title: 'Smart Task Planner', desc: 'Daily tasks with priorities, exam linking, and quick templates', color: '#22c55e' },
-  { icon: BookOpen, title: 'Study Session Logger', desc: 'Log hours by subject — see where your time actually goes', color: '#a855f7' },
-  { icon: Bell, title: 'Study Alarms', desc: 'Custom reminders for revision, mock tests, and reading', color: '#ef4444' },
-  { icon: Notebook, title: 'Notes System', desc: 'Subject-wise notes with tags, search, and pin support', color: '#3b82f6' },
-  { icon: BookMarked, title: 'Syllabus Tracker', desc: 'Track topic-wise status — Not Started, In Progress, Revised, Done', color: '#ec4899' },
-  { icon: GraduationCap, title: 'Exam Countdown', desc: 'Live countdown timers for every upcoming exam date', color: '#6366f1' },
-  { icon: BarChart3, title: 'Progress Charts', desc: 'Daily/weekly study trends with visual charts and breakdowns', color: TEAL },
+const TEST_SERIES_FEATURES = [
+  {
+    icon: BrainCircuit,
+    title: 'Exam-wise Test Series',
+    desc: 'Full mock tests matching real exam patterns — UPSC Prelims, BPSC, BPSSC SI. Timed tests with instant scoring and detailed analysis.',
+    color: '#6366f1',
+    bg: '#eef2ff',
+  },
+  {
+    icon: Target,
+    title: 'Subject-wise Practice',
+    desc: 'Pick any subject — Polity, Economy, History, Geography, Science. Dedicated question sets with difficulty levels and explanations.',
+    color: '#ec4899',
+    bg: '#fdf2f8',
+  },
+  {
+    icon: Layers,
+    title: 'Set-wise Practice (50 Qs)',
+    desc: 'Questions organized in sets of 50. Complete Set 1, move to Set 2. Systematic coverage — no question left behind.',
+    color: '#3b82f6',
+    bg: '#eff6ff',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI Question Generation',
+    desc: 'Generate exam-quality MCQs using AI with authentic patterns — statement-based, match-the-following, and negative framing.',
+    color: '#8b5cf6',
+    bg: '#f5f3ff',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Smart Progress Tracking',
+    desc: 'Track attempted vs remaining questions per subject. Unattempted questions are prioritized — systematic syllabus coverage.',
+    color: '#22c55e',
+    bg: '#f0fdf4',
+  },
+  {
+    icon: Clock,
+    title: 'PYQ Papers',
+    desc: 'Previous Year Questions from UPSC, BPSC, and State PSCs. Filter by exam, year, and difficulty. Practice with real exam questions.',
+    color: '#f59e0b',
+    bg: '#fffbeb',
+  },
 ]
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Choose Your Exam', desc: 'Select BPSSC SI, UPSC, BPSC, or any State PSC exam', icon: Target },
-  { step: '02', title: 'Pick Subject & Set', desc: 'Choose a subject like Hindi, English, or Math. Questions are organized in sets of 50', icon: Layers },
-  { step: '03', title: 'Practice with Explanations', desc: 'Solve MCQs with instant feedback, detailed explanations, and correct answers', icon: Brain },
-  { step: '04', title: 'Track & Improve', desc: 'See your progress, identify weak areas, and systematically cover the entire syllabus', icon: TrendingUp },
+  { step: '01', title: 'Sign Up & Set Goals', desc: 'Create your account, add your target exams, and set daily study goals', icon: Target },
+  { step: '02', title: 'Plan & Study', desc: 'Use task planner, log study sessions by subject, and read GS Paper-wise current affairs', icon: BookOpen },
+  { step: '03', title: 'Practice & Test', desc: 'Solve subject-wise MCQs in sets of 50, take mock tests, and review detailed explanations', icon: BrainCircuit },
+  { step: '04', title: 'Analyze & Improve', desc: 'Track progress with visual analytics, identify weak areas, and systematically cover the syllabus', icon: BarChart3 },
 ]
 
 const TESTIMONIALS = [
   {
     name: 'Priya Sharma',
     role: 'UPSC CSE 2025 Aspirant',
-    text: 'The GS Paper-wise current affairs categorization is a game-changer. I save 2 hours daily on news reading.',
+    text: 'The GS Paper-wise current affairs categorization is a game-changer. I save 2 hours daily on news reading. The study logger keeps me accountable.',
     avatar: 'PS',
     color: TEAL,
   },
   {
     name: 'Shashank Sharma',
-    role: 'BPSC AEDO Aspirant',
-    text: 'Finally an app that understands what PSC aspirants actually need. The study logger keeps me accountable.',
+    role: 'BPSC Aspirant',
+    text: 'Finally an app that understands what PSC aspirants actually need. The task planner and syllabus tracker keep my entire preparation organized.',
     avatar: 'SS',
     color: '#3b82f6',
   },
   {
     name: 'Anuradha Kumari',
     role: 'BPSSC SI Aspirant',
-    text: 'The set-wise practice of 50 questions each is perfect. I complete one set daily and my confidence has improved dramatically.',
+    text: 'The set-wise practice of 50 questions each is perfect. I complete one set daily and track my progress across all subjects systematically.',
     avatar: 'AK',
     color: '#a855f7',
   },
@@ -123,28 +166,28 @@ const TESTIMONIALS = [
 
 const FAQS = [
   {
-    q: 'How does AI-powered question generation work?',
-    a: 'Our system uses Claude AI to generate exam-quality MCQs based on the actual exam pattern. You can generate questions for any subject with specific difficulty levels. Each question comes with 4 options and a detailed explanation citing specific facts.',
+    q: 'Which exams does ExamPrep support?',
+    a: 'ExamPrep is designed for UPSC CSE (Prelims & Mains), BPSC, UPPSC, MPSC, WBPSC, RPSC, KPSC, BPSSC SI, and all state-level civil service exams. The current affairs, study tools, and syllabus tracker are aligned with the common GS syllabus shared across these exams.',
   },
   {
-    q: 'What exams are covered?',
-    a: 'Currently we support Bihar Daroga Mains (BPSSC SI) with 1000+ questions across all 8 subjects, plus UPSC CSE, BPSC, UPPSC, MPSC, and all State PSC exams. We are continuously adding more questions and exam patterns.',
+    q: 'How is current affairs categorized?',
+    a: 'News articles from The Hindu, Indian Express, NDTV, LiveMint, Times of India, and Down To Earth are auto-categorized by UPSC GS Papers (GS-I, GS-II, GS-III, Prelims) using intelligent keyword analysis. You can mark articles as read, add them to study notes, and create tasks from them.',
   },
   {
-    q: 'How does set-wise practice work?',
-    a: 'Questions for each subject are divided into sets of 50. You can practice Set 1 (Q1-50), then Set 2 (Q51-100), and so on. This ensures you systematically cover every question without repetition. Once all sets are done, you can revise any set.',
+    q: 'How does the test series work?',
+    a: 'Questions are organized subject-wise and exam-wise. Each subject has questions in sets of 50. You practice Set 1 (Q1-50), then Set 2 (Q51-100), and so on. AI generates exam-quality MCQs with authentic patterns. Every question has detailed explanations. Your progress is tracked across all subjects.',
   },
   {
-    q: 'Is this useful for State PSC exams too?',
-    a: 'Absolutely. ExamPrep works for UPSC CSE, BPSC, UPPSC, MPSC, WBPSC, and all state-level civil service exams. The current affairs and study tools are designed for the common GS syllabus shared across these exams.',
+    q: 'Can I track my preparation progress?',
+    a: 'Yes — at multiple levels. The Study Logger tracks daily hours by subject. The Syllabus Tracker shows topic-wise status (Not Started, In Progress, Revised, Done). Progress Analytics gives you visual charts of study trends. And the Quiz system tracks attempted vs remaining questions per subject.',
   },
   {
     q: 'Can I use it on my phone?',
-    a: 'Yes, ExamPrep is fully responsive and works on mobile browsers. You can practice questions, read current affairs, and manage tasks on the go.',
+    a: 'Yes, ExamPrep is fully responsive and works on mobile browsers. You can read current affairs, practice questions, log study sessions, and manage tasks on the go.',
   },
   {
     q: 'What happens after my free trial?',
-    a: 'Your data is safely stored. You can subscribe to continue or renew anytime and pick up exactly where you left off. We never delete your study logs, notes, or quiz history.',
+    a: 'Your data is safely stored. You can subscribe to continue or renew anytime and pick up exactly where you left off. We never delete your study logs, notes, or quiz history. Cancel anytime — no lock-in.',
   },
 ]
 
@@ -182,8 +225,8 @@ function Navbar({ onSignIn, onSignUp }) {
         </div>
 
         <div className="lp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          <a href="#test-series" style={{ fontSize: 14, fontWeight: 500, color: SLATE, textDecoration: 'none' }}>Test Series</a>
           <a href="#features" style={{ fontSize: 14, fontWeight: 500, color: SLATE, textDecoration: 'none' }}>Features</a>
+          <a href="#test-series" style={{ fontSize: 14, fontWeight: 500, color: SLATE, textDecoration: 'none' }}>Test Series</a>
           <a href="#pricing" style={{ fontSize: 14, fontWeight: 500, color: SLATE, textDecoration: 'none' }}>Pricing</a>
           <a href="#faq" style={{ fontSize: 14, fontWeight: 500, color: SLATE, textDecoration: 'none' }}>FAQ</a>
           <button onClick={onSignIn} style={{
@@ -208,8 +251,8 @@ function Navbar({ onSignIn, onSignUp }) {
           background: '#fff', borderTop: `1px solid ${BORDER}`, padding: '16px 24px',
           display: 'flex', flexDirection: 'column', gap: 12,
         }}>
-          <a href="#test-series" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: SLATE, textDecoration: 'none', padding: '8px 0' }}>Test Series</a>
           <a href="#features" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: SLATE, textDecoration: 'none', padding: '8px 0' }}>Features</a>
+          <a href="#test-series" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: SLATE, textDecoration: 'none', padding: '8px 0' }}>Test Series</a>
           <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: SLATE, textDecoration: 'none', padding: '8px 0' }}>Pricing</a>
           <a href="#faq" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, fontWeight: 500, color: SLATE, textDecoration: 'none', padding: '8px 0' }}>FAQ</a>
           <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
@@ -265,13 +308,13 @@ export default function Landing() {
       <section style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
         textAlign: 'center', padding: '120px 24px 80px',
-        background: 'linear-gradient(180deg, #f0fdfa 0%, #f5f3ff 50%, #ffffff 100%)',
+        background: 'linear-gradient(180deg, #f0fdfa 0%, #ffffff 60%)',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'rgba(139,92,246,0.04)', top: -150, right: -200 }} />
-        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'rgba(20,184,166,0.04)', bottom: -100, left: -150 }} />
+        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'rgba(20,184,166,0.04)', top: -100, right: -150 }} />
+        <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: 'rgba(59,130,246,0.03)', bottom: -80, left: -100 }} />
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 820 }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 800 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px 6px 8px',
@@ -280,289 +323,178 @@ export default function Landing() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           }}>
             <span style={{
-              padding: '3px 10px', borderRadius: 999,
-              background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#fff',
-              fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
-            }}><Sparkles size={10} /> AI POWERED</span>
-            1000+ Questions for BPSSC SI & UPSC
+              padding: '3px 8px', borderRadius: 999,
+              background: '#ecfdf5', color: '#059669', fontSize: 11, fontWeight: 700,
+            }}>NEW</span>
+            Built for UPSC, BPSC, BPSSC & State PSC Aspirants
           </div>
 
           <h1 style={{
-            fontSize: 'clamp(36px, 5vw, 62px)', fontWeight: 900,
-            lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5, color: NAVY,
+            fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900,
+            lineHeight: 1.1, margin: '0 0 20px', letterSpacing: -1, color: NAVY,
           }}>
-            AI-Powered
+            Your Complete
             <br />
-            <span style={{
-              background: 'linear-gradient(135deg, #14b8a6, #6366f1)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>Test Series</span> for
+            <span style={{ color: TEAL }}>Exam Preparation</span>
             <br />
-            Competitive Exams
+            Command Center
           </h1>
 
           <p style={{
             fontSize: 'clamp(16px, 2vw, 20px)', lineHeight: 1.6,
             color: SLATE, maxWidth: 620, margin: '0 auto 36px',
           }}>
-            Practice subject-wise and exam-wise with 1000+ AI-generated MCQs. Organized in sets of 50 questions with detailed explanations, progress tracking, and performance analytics.
+            Track exams, log study hours, read GS Paper-wise current affairs, practice MCQs, and track your entire syllabus — all in one place. Built by aspirants, for aspirants.
           </p>
 
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={goSignUp} style={{
-              padding: '16px 36px', background: TEAL, color: '#fff',
-              border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700,
+              padding: '14px 32px', background: TEAL, color: '#fff',
+              border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
               boxShadow: '0 4px 14px rgba(20,184,166,0.3)', transition: 'all 0.2s',
             }}
               onMouseEnter={e => e.currentTarget.style.background = TEAL_DARK}
               onMouseLeave={e => e.currentTarget.style.background = TEAL}
             >
-              Start Free Trial <ArrowRight size={18} />
+              Start 7-Day Free Trial <ArrowRight size={18} />
             </button>
-            <button onClick={() => document.getElementById('test-series')?.scrollIntoView({ behavior: 'smooth' })} style={{
-              padding: '16px 32px', background: '#fff',
-              border: `1.5px solid ${BORDER}`, borderRadius: 14,
-              fontSize: 17, fontWeight: 600, color: SLATE, cursor: 'pointer', transition: 'all 0.2s',
+            <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} style={{
+              padding: '14px 28px', background: '#fff',
+              border: `1.5px solid ${BORDER}`, borderRadius: 12,
+              fontSize: 16, fontWeight: 600, color: SLATE, cursor: 'pointer', transition: 'all 0.2s',
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = TEAL}
               onMouseLeave={e => e.currentTarget.style.borderColor = BORDER}
             >
-              View Test Series
+              See Features
             </button>
           </div>
 
-          {/* Stats row */}
+          {/* Social proof */}
           <div style={{
-            display: 'flex', justifyContent: 'center', gap: 40, marginTop: 48, flexWrap: 'wrap',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 16, marginTop: 40, flexWrap: 'wrap',
           }}>
-            {[
-              { value: '1000+', label: 'MCQ Questions' },
-              { value: '8+', label: 'Subjects' },
-              { value: '50', label: 'Qs per Set' },
-              { value: 'AI', label: 'Powered' },
-            ].map(({ value, label }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 900, color: NAVY }}>{value}</div>
-                <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, marginTop: 2 }}>{label}</div>
+            <div style={{ display: 'flex' }}>
+              {['PS', 'RV', 'AR', 'MK'].map((init, i) => (
+                <div key={i} style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  background: [TEAL, '#3b82f6', '#f59e0b', '#a855f7'][i],
+                  color: '#fff', fontSize: 11, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid #fff', marginLeft: i > 0 ? -10 : 0,
+                }}>{init}</div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ display: 'flex', gap: 2 }}>
+                {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />)}
               </div>
-            ))}
+              <p style={{ fontSize: 12, color: MUTED, margin: '2px 0 0' }}>Trusted by 100+ aspirants</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── EXAM-WISE TEST SERIES ─── */}
-      <section id="test-series" style={{
-        padding: '80px 24px', background: NAVY,
+      {/* ─── SUPPORTED EXAMS BAR ─── */}
+      <section style={{
+        padding: '24px', background: NAVY,
+      }}>
+        <div style={{
+          maxWidth: 1000, margin: '0 auto',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 12, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 1.5, marginRight: 8 }}>
+            Exams Covered:
+          </span>
+          {SUPPORTED_EXAMS.map(exam => (
+            <span key={exam} style={{
+              fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)',
+              background: 'rgba(255,255,255,0.08)', padding: '5px 14px', borderRadius: 999,
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}>{exam}</span>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── GS PAPER CATEGORIES ─── */}
+      <section style={{
+        padding: '70px 24px', background: NAVY,
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
-            Exam-wise Test Series
+            UPSC & State PSC Aligned
           </p>
-          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>
-            Choose your exam, start practicing
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>
+            Everything organized by GS Papers
           </h2>
-          <p style={{ textAlign: 'center', fontSize: 16, color: 'rgba(255,255,255,0.55)', maxWidth: 520, margin: '0 auto 48px' }}>
-            Subject-wise question sets with AI-generated MCQs matching real exam patterns
+          <p style={{ textAlign: 'center', fontSize: 15, color: 'rgba(255,255,255,0.5)', maxWidth: 520, margin: '0 auto 40px' }}>
+            Current affairs, study logs, notes, quiz questions — all mapped to the UPSC GS Paper structure
           </p>
-
-          <div className="lp-exam-grid" style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24,
-            maxWidth: 900, margin: '0 auto',
-          }}>
-            {EXAM_TYPES.map(exam => (
-              <div key={exam.name} style={{
-                padding: 32, borderRadius: 20,
+          <div className="lp-gs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+            {GS_PAPERS.map(({ paper, topics, color, icon: Icon }) => (
+              <div key={paper} style={{
+                padding: '24px 20px',
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                borderTop: `3px solid ${exam.color}`,
+                borderRadius: 14,
+                borderTop: `3px solid ${color}`,
                 transition: 'all 0.2s',
               }}
-                className="lp-exam-card"
+                className="lp-gs-card"
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '0 0 4px' }}>{exam.name}</h3>
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0 }}>{exam.desc}</p>
-                  </div>
-                  <span style={{
-                    padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                    background: `${exam.color}22`, color: exam.color, border: `1px solid ${exam.color}44`,
-                    whiteSpace: 'nowrap',
-                  }}>{exam.questions} Qs</span>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-                  {exam.subjects.map(sub => (
-                    <span key={sub} style={{
-                      fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.7)',
-                      background: 'rgba(255,255,255,0.08)', padding: '4px 10px', borderRadius: 6,
-                    }}>{sub}</span>
-                  ))}
-                </div>
-
-                <button onClick={goSignUp} style={{
-                  width: '100%', padding: '12px', borderRadius: 10, border: 'none',
-                  background: exam.color, color: '#fff', fontSize: 14, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  transition: 'opacity 0.15s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                >
-                  <Play size={14} /> Start Practice
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <section style={{ padding: '80px 24px', background: '#f8fafc' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
-            How It Works
-          </p>
-          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 48px' }}>
-            Start practicing in 4 simple steps
-          </h2>
-          <div className="lp-steps-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24,
-          }}>
-            {HOW_IT_WORKS.map(({ step, title, desc, icon: Icon }) => (
-              <div key={step} style={{ textAlign: 'center', position: 'relative' }}>
                 <div style={{
-                  width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-                  background: '#fff', border: `2px solid ${TEAL}20`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(20,184,166,0.08)',
+                  width: 38, height: 38, borderRadius: 10, marginBottom: 12,
+                  background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Icon size={24} color={TEAL} />
+                  <Icon size={18} color={color} />
                 </div>
                 <div style={{
-                  fontSize: 11, fontWeight: 800, color: TEAL, marginBottom: 8,
-                  textTransform: 'uppercase', letterSpacing: 1.5,
-                }}>Step {step}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: NAVY, margin: '0 0 8px' }}>{title}</h3>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: MUTED, margin: 0 }}>{desc}</p>
+                  display: 'inline-block', padding: '3px 10px',
+                  background: color, borderRadius: 6,
+                  fontSize: 12, fontWeight: 800, color: '#fff', marginBottom: 10,
+                }}>{paper}</div>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)', margin: 0 }}>{topics}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── AI-POWERED FEATURES ─── */}
+      {/* ─── CORE FEATURES ─── */}
       <section id="features" style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '5px 14px', borderRadius: 999, marginBottom: 16,
-            background: 'linear-gradient(135deg, #f5f3ff, #eef2ff)', border: '1px solid #e0e7ff',
-          }}>
-            <Sparkles size={13} color="#7c3aed" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed' }}>AI-POWERED PRACTICE</span>
-          </div>
-          <h2 style={{ fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
-            Smart test series that adapts to you
+          <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+            Preparation Tools
+          </p>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
+            Everything you need to crack the exam
           </h2>
-          <p style={{ fontSize: 16, color: MUTED, maxWidth: 580, margin: '0 0 48px' }}>
-            AI-generated questions, systematic set-wise practice, and intelligent progress tracking — everything you need to crack your exam.
+          <p style={{ textAlign: 'center', fontSize: 16, color: MUTED, maxWidth: 560, margin: '0 auto 48px' }}>
+            Every feature designed around the UPSC/PSC preparation workflow — from daily current affairs to syllabus tracking.
           </p>
 
-          <div className="lp-ai-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20,
+          <div className="lp-features-grid" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20,
           }}>
-            {AI_FEATURES.map(({ icon: Icon, title, desc, color, bg }) => (
+            {CORE_FEATURES.map(({ icon: Icon, title, desc, color, bg }) => (
               <div key={title} style={{
-                padding: 28, border: `1px solid ${BORDER}`, borderRadius: 16,
+                padding: 26, border: `1px solid ${BORDER}`, borderRadius: 16,
                 transition: 'all 0.2s', cursor: 'default',
               }}
                 className="lp-feature-card"
               >
                 <div style={{
-                  width: 48, height: 48, borderRadius: 14,
+                  width: 46, height: 46, borderRadius: 12,
                   background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   marginBottom: 16,
                 }}>
-                  <Icon size={24} color={color} />
+                  <Icon size={22} color={color} />
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: NAVY, margin: '0 0 8px' }}>{title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.65, color: MUTED, margin: 0 }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SUBJECT SHOWCASE ─── */}
-      <section style={{
-        padding: '60px 24px',
-        background: 'linear-gradient(135deg, #f0fdfa, #f5f3ff)',
-        borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`,
-      }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
-            Subject-wise Question Bank
-          </h2>
-          <p style={{ fontSize: 14, color: MUTED, margin: '0 0 32px' }}>
-            Each subject organized in sets of 50 MCQs with detailed explanations
-          </p>
-          <div className="lp-subject-grid" style={{
-            display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap',
-          }}>
-            {[
-              { name: 'Hindi Language', qs: '60+', color: '#ec4899' },
-              { name: 'English Language', qs: '112+', color: '#3b82f6' },
-              { name: 'Bihar GK & History', qs: '62+', color: '#f59e0b' },
-              { name: 'Mathematics & Reasoning', qs: '53+', color: '#22c55e' },
-              { name: 'Indian Polity', qs: '50+', color: '#6366f1' },
-              { name: 'General Science', qs: '50+', color: '#ef4444' },
-              { name: 'Geography', qs: '50+', color: TEAL },
-              { name: 'GK & Current Affairs', qs: '50+', color: '#a855f7' },
-            ].map(sub => (
-              <div key={sub.name} style={{
-                padding: '12px 20px', borderRadius: 12, background: '#fff',
-                border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 10,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              }}>
-                <div style={{ width: 4, height: 24, borderRadius: 2, background: sub.color }} />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>{sub.name}</div>
-                  <div style={{ fontSize: 11, color: MUTED }}>{sub.qs} questions</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── PLATFORM FEATURES ─── */}
-      <section style={{ padding: '80px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
-            Complete Preparation Suite
-          </p>
-          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
-            Beyond just test series
-          </h2>
-          <p style={{ textAlign: 'center', fontSize: 16, color: MUTED, maxWidth: 550, margin: '0 auto 48px' }}>
-            A complete exam preparation ecosystem designed for serious aspirants
-          </p>
-
-          <div className="lp-platform-grid" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16,
-          }}>
-            {PLATFORM_FEATURES.map(({ icon: Icon, title, desc, color }) => (
-              <div key={title} style={{
-                padding: '22px 20px', border: `1px solid ${BORDER}`,
-                borderRadius: 14, transition: 'all 0.2s',
-              }}
-                className="lp-feature-card"
-              >
-                <Icon size={20} color={color} style={{ marginBottom: 12 }} />
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: NAVY, margin: '0 0 6px' }}>{title}</h3>
-                <p style={{ fontSize: 12, lineHeight: 1.6, color: MUTED, margin: 0 }}>{desc}</p>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: NAVY, margin: '0 0 8px' }}>{title}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.65, color: MUTED, margin: 0 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -583,6 +515,105 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ─── HOW IT WORKS ─── */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+            How It Works
+          </p>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 48px' }}>
+            Start preparing in 4 simple steps
+          </h2>
+          <div className="lp-steps-grid" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24,
+          }}>
+            {HOW_IT_WORKS.map(({ step, title, desc, icon: Icon }) => (
+              <div key={step} style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
+                  background: '#fff', border: `2px solid ${TEAL}20`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(20,184,166,0.08)',
+                }}>
+                  <Icon size={24} color={TEAL} />
+                </div>
+                <div style={{
+                  fontSize: 11, fontWeight: 800, color: TEAL, marginBottom: 8,
+                  textTransform: 'uppercase', letterSpacing: 1.5,
+                }}>Step {step}</div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: NAVY, margin: '0 0 8px' }}>{title}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: MUTED, margin: 0 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TEST SERIES ─── */}
+      <section id="test-series" style={{
+        padding: '80px 24px',
+        background: 'linear-gradient(180deg, #f8fafc 0%, #f0fdfa 50%, #f5f3ff 100%)',
+      }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 14px', borderRadius: 999, marginBottom: 16,
+              background: 'linear-gradient(135deg, #f5f3ff, #eef2ff)', border: '1px solid #e0e7ff',
+            }}>
+              <Sparkles size={13} color="#7c3aed" />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed' }}>AI-POWERED</span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
+              MCQ Test Series & Practice
+            </h2>
+            <p style={{ fontSize: 16, color: MUTED, maxWidth: 560, margin: '0 auto' }}>
+              Subject-wise and exam-wise question sets with AI-generated MCQs, detailed explanations, and performance tracking.
+            </p>
+          </div>
+
+          <div className="lp-ts-grid" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20,
+          }}>
+            {TEST_SERIES_FEATURES.map(({ icon: Icon, title, desc, color, bg }) => (
+              <div key={title} style={{
+                padding: 26, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 16,
+                transition: 'all 0.2s',
+              }}
+                className="lp-feature-card"
+              >
+                <div style={{
+                  width: 46, height: 46, borderRadius: 12,
+                  background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 16,
+                }}>
+                  <Icon size={22} color={color} />
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: NAVY, margin: '0 0 8px' }}>{title}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.65, color: MUTED, margin: 0 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick stats */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: 48, marginTop: 48, flexWrap: 'wrap',
+          }}>
+            {[
+              { value: '1000+', label: 'MCQ Questions' },
+              { value: '8+', label: 'Subjects' },
+              { value: '50', label: 'Qs per Set' },
+              { value: 'AI', label: 'Generated' },
+            ].map(({ value, label }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: NAVY }}>{value}</div>
+                <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── PRICING ─── */}
       <section id="pricing" style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -592,8 +623,8 @@ export default function Landing() {
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(26px, 3vw, 36px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
             Less than a cup of chai per day
           </h2>
-          <p style={{ textAlign: 'center', fontSize: 16, color: MUTED, maxWidth: 480, margin: '0 auto 32px' }}>
-            Full access to AI test series, current affairs, study tools — everything included. 7-day free trial.
+          <p style={{ textAlign: 'center', fontSize: 16, color: MUTED, maxWidth: 500, margin: '0 auto 32px' }}>
+            Study tools, current affairs, test series, analytics — everything included. 7-day free trial.
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}>
@@ -646,7 +677,7 @@ export default function Landing() {
                 marginBottom: 24,
               }}>Start Free Trial</button>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {['AI-powered test series', '1000+ MCQ questions', 'Subject-wise sets of 50', 'Daily current affairs', 'Study analytics & progress', 'Unlimited study logs'].map(f => (
+                {['All features included', 'Daily current affairs by GS Paper', 'Study analytics & progress charts', 'Syllabus tracker', 'MCQ test series (1000+ Qs)', 'Unlimited study logs & notes'].map(f => (
                   <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: SLATE }}>
                     <Check size={15} color={TEAL} /> {f}
                   </li>
@@ -756,22 +787,14 @@ export default function Landing() {
         background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_LIGHT} 100%)`,
         textAlign: 'center',
       }}>
-        <div style={{ maxWidth: 650, margin: '0 auto' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '5px 14px', borderRadius: 999, marginBottom: 24,
-            background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)',
-          }}>
-            <Sparkles size={13} color="#a78bfa" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa' }}>AI-POWERED PRACTICE</span>
-          </div>
-          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 900, color: '#fff', margin: '0 0 16px', lineHeight: 1.2 }}>
-            Stop guessing,
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 900, color: '#fff', margin: '0 0 16px', lineHeight: 1.2 }}>
+            Your preparation deserves
             <br />
-            <span style={{ color: TEAL }}>start practicing smart</span>
+            <span style={{ color: TEAL }}>a better system</span>
           </h2>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', margin: '0 0 32px', lineHeight: 1.6 }}>
-            1000+ AI-generated MCQs across 8+ subjects. Set-wise practice of 50 questions each. Detailed explanations with every answer. Start your free trial today.
+            Join thousands of UPSC & State PSC aspirants who study smarter. Current affairs, study tracking, MCQ practice, syllabus management — all in one place.
           </p>
           <button onClick={goSignUp} style={{
             padding: '16px 40px', background: TEAL, color: '#fff',
@@ -810,7 +833,7 @@ export default function Landing() {
             <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>ExamPrep</span>
           </div>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
-            &copy; 2026 ExamPrep. AI-powered exam preparation platform.
+            &copy; 2026 ExamPrep. Made for aspirants, by aspirants.
           </p>
         </div>
       </footer>
@@ -818,22 +841,23 @@ export default function Landing() {
       {/* ─── RESPONSIVE STYLES ─── */}
       <style>{`
         @media (max-width: 1024px) {
-          .lp-ai-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .lp-platform-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .lp-ts-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .lp-gs-grid { grid-template-columns: repeat(3, 1fr) !important; }
         }
         @media (max-width: 768px) {
           .lp-nav-links { display: none !important; }
           .lp-hamburger { display: flex !important; }
-          .lp-exam-grid { grid-template-columns: 1fr !important; }
+          .lp-gs-grid { grid-template-columns: 1fr 1fr !important; }
+          .lp-features-grid { grid-template-columns: 1fr !important; }
+          .lp-ts-grid { grid-template-columns: 1fr !important; }
           .lp-steps-grid { grid-template-columns: 1fr 1fr !important; }
-          .lp-ai-grid { grid-template-columns: 1fr !important; }
-          .lp-platform-grid { grid-template-columns: 1fr 1fr !important; }
           .lp-pricing-grid { grid-template-columns: 1fr !important; }
           .lp-testimonials-grid { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 480px) {
-          .lp-platform-grid { grid-template-columns: 1fr !important; }
           .lp-steps-grid { grid-template-columns: 1fr !important; }
+          .lp-gs-grid { grid-template-columns: 1fr !important; }
         }
         @media (min-width: 769px) {
           .lp-mobile-menu { display: none !important; }
@@ -842,7 +866,7 @@ export default function Landing() {
           border-color: ${TEAL} !important;
           box-shadow: 0 4px 16px rgba(20,184,166,0.08);
         }
-        .lp-exam-card:hover {
+        .lp-gs-card:hover {
           background: rgba(255,255,255,0.08) !important;
           border-color: rgba(255,255,255,0.15) !important;
         }
