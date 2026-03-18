@@ -207,11 +207,23 @@ export default function QuestionBank() {
         return
       }
 
-      // Map subject names to IDs
+      // Map subject names to IDs (use exam name to disambiguate duplicates)
+      const examPaperMap = {
+        'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
+        'BPSSC SI': 'BPSSC SI Mains',
+        'BPSSC': 'BPSSC SI Mains',
+      }
       const insertData = parsed.map(q => {
         let subjectId = q.subject_id || null
         if (!subjectId && q.subject_name) {
-          const sub = subjects.find(s => s.name.toLowerCase() === q.subject_name.toLowerCase())
+          const nameMatch = q.subject_name.toLowerCase()
+          const paperHint = q.pyq_exam ? examPaperMap[q.pyq_exam] : null
+          // If we know the paper from the exam, match both name + paper to avoid picking wrong duplicate
+          let sub = paperHint
+            ? subjects.find(s => s.name.toLowerCase() === nameMatch && s.paper === paperHint)
+            : null
+          // Fallback to name-only match
+          if (!sub) sub = subjects.find(s => s.name.toLowerCase() === nameMatch)
           subjectId = sub?.id || null
         }
         return {
