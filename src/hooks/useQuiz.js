@@ -46,7 +46,9 @@ export function useQuiz() {
 
     if (subject_id) {
       query = query.eq('subject_id', subject_id)
-    } else if (paper) {
+    } else if (paper && !pyq_exam) {
+      // Skip paper filter when pyq_exam is set — pyq_exam+pyq_year is sufficient
+      // and imported PYQ questions may have null subject_id
       const subjectIds = subjects.filter(s => s.paper === paper).map(s => s.id)
       if (subjectIds.length > 0) {
         query = query.in('subject_id', subjectIds)

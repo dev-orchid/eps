@@ -216,14 +216,20 @@ export default function QuestionBank() {
       const insertData = parsed.map(q => {
         let subjectId = q.subject_id || null
         if (!subjectId && q.subject_name) {
-          const nameMatch = q.subject_name.toLowerCase()
+          const nameMatch = q.subject_name.toLowerCase().trim()
           const paperHint = q.pyq_exam ? examPaperMap[q.pyq_exam] : null
-          // If we know the paper from the exam, match both name + paper to avoid picking wrong duplicate
-          let sub = paperHint
-            ? subjects.find(s => s.name.toLowerCase() === nameMatch && s.paper === paperHint)
-            : null
-          // Fallback to name-only match
-          if (!sub) sub = subjects.find(s => s.name.toLowerCase() === nameMatch)
+          const candidates = paperHint ? subjects.filter(s => s.paper === paperHint) : subjects
+          // Exact match first
+          let sub = candidates.find(s => s.name.toLowerCase() === nameMatch)
+          // Partial match: subject name starts with the input (e.g. "General" → "General Knowledge & Current Affairs")
+          if (!sub) sub = candidates.find(s => s.name.toLowerCase().startsWith(nameMatch))
+          // Partial match: input starts with subject name
+          if (!sub) sub = candidates.find(s => nameMatch.startsWith(s.name.toLowerCase()))
+          // Fallback without paper filter
+          if (!sub && paperHint) {
+            sub = subjects.find(s => s.name.toLowerCase() === nameMatch)
+            if (!sub) sub = subjects.find(s => s.name.toLowerCase().startsWith(nameMatch))
+          }
           subjectId = sub?.id || null
         }
         return {
