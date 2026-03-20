@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuiz } from '../hooks/useQuiz'
-import { ChevronLeft, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Flag, Languages } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Flag, Languages, Loader2 } from 'lucide-react'
 
 const C = {
   teal: '#14b8a6', tealDark: '#0d9488', tealLight: '#e0f7f0',
@@ -39,6 +39,7 @@ export default function QuizPlay() {
   const [revealed, setRevealed] = useState({}) // { questionId: true } for practice mode
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [quizComplete, setQuizComplete] = useState(false)
+  const [finishing, setFinishing] = useState(false)
   const startTimeRef = useRef(Date.now())
   const questionStartRef = useRef(Date.now())
 
@@ -159,41 +160,47 @@ export default function QuizPlay() {
   }
 
   const handleFinish = useCallback(async () => {
-    if (quizComplete) return
-    setQuizComplete(true)
+    if (quizComplete || finishing) return
+    setFinishing(true)
 
-    // Submit any unrevealed answers
-    const unrevealed = questions.filter(q => !revealed[q.id] && answers[q.id])
-    if (unrevealed.length > 0) {
-      const full = await fetchQuestions(unrevealed.map(q => q.id))
-      for (const q of full) {
-        const isCorrect = answers[q.id] === q.correct_option
-        await submitAnswer(attemptId, q.id, answers[q.id], isCorrect, 0)
+    try {
+      // Submit any unrevealed answers
+      const unrevealed = questions.filter(q => !revealed[q.id] && answers[q.id])
+      if (unrevealed.length > 0) {
+        const full = await fetchQuestions(unrevealed.map(q => q.id))
+        for (const q of full) {
+          const isCorrect = answers[q.id] === q.correct_option
+          await submitAnswer(attemptId, q.id, answers[q.id], isCorrect, 0)
+        }
+        setFullQuestions(prev => [...prev, ...full])
+        unrevealed.forEach(q => setRevealed(prev => ({ ...prev, [q.id]: true })))
       }
-      setFullQuestions(prev => [...prev, ...full])
-      unrevealed.forEach(q => setRevealed(prev => ({ ...prev, [q.id]: true })))
+
+      // Calculate results
+      const allFull = [...fullQuestions, ...(await fetchQuestions(questions.filter(q => !fullQuestions.find(f => f.id === q.id)).map(q => q.id)))]
+      let correct = 0, wrong = 0, skipped = 0
+      questions.forEach(q => {
+        const full = allFull.find(f => f.id === q.id)
+        if (!answers[q.id]) { skipped++; return }
+        if (full && answers[q.id] === full.correct_option) correct++
+        else wrong++
+      })
+
+      setQuizComplete(true)
+
+      await completeAttempt(attemptId, {
+        correct, wrong, skipped,
+        timeTaken: Math.floor((Date.now() - startTimeRef.current) / 1000),
+      })
+
+      navigate('/quiz/results', {
+        state: { attemptId, correct, wrong, skipped, total, timeTaken: elapsedSeconds },
+        replace: true,
+      })
+    } catch {
+      setFinishing(false)
     }
-
-    // Calculate results
-    const allFull = [...fullQuestions, ...(await fetchQuestions(questions.filter(q => !fullQuestions.find(f => f.id === q.id)).map(q => q.id)))]
-    let correct = 0, wrong = 0, skipped = 0
-    questions.forEach(q => {
-      const full = allFull.find(f => f.id === q.id)
-      if (!answers[q.id]) { skipped++; return }
-      if (full && answers[q.id] === full.correct_option) correct++
-      else wrong++
-    })
-
-    await completeAttempt(attemptId, {
-      correct, wrong, skipped,
-      timeTaken: Math.floor((Date.now() - startTimeRef.current) / 1000),
-    })
-
-    navigate('/quiz/results', {
-      state: { attemptId, correct, wrong, skipped, total, timeTaken: elapsedSeconds },
-      replace: true,
-    })
-  }, [quizComplete, questions, answers, revealed, fullQuestions, attemptId, elapsedSeconds])
+  }, [quizComplete, finishing, questions, answers, revealed, fullQuestions, attemptId, elapsedSeconds])
 
   if (!quizData || !currentQ) return null
 
@@ -225,13 +232,15 @@ export default function QuizPlay() {
           </div>
           <button
             onClick={handleFinish}
+            disabled={finishing}
             style={{
               padding: '8px 18px', borderRadius: 10, border: 'none',
-              background: C.red, color: C.white, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              background: finishing ? C.muted : C.red, color: C.white, fontSize: 13, fontWeight: 700,
+              cursor: finishing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              opacity: finishing ? 0.8 : 1, transition: 'all 0.15s',
             }}
           >
-            <Flag size={14} /> Finish
+            {finishing ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Finishing...</> : <><Flag size={14} /> Finish</>}
           </button>
         </div>
       </div>
@@ -449,14 +458,16 @@ export default function QuizPlay() {
         ) : (
           <button
             onClick={handleFinish}
+            disabled={finishing}
             style={{
               flex: 1, padding: '12px', borderRadius: 10,
-              border: 'none', background: C.green, color: C.white,
-              fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              border: 'none', background: finishing ? C.muted : C.green, color: C.white,
+              fontSize: 14, fontWeight: 700, cursor: finishing ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              opacity: finishing ? 0.8 : 1, transition: 'all 0.15s',
             }}
           >
-            Finish Quiz
+            {finishing ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Finishing...</> : 'Finish Quiz'}
           </button>
         )}
       </div>
