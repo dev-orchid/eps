@@ -667,6 +667,7 @@ Q: Next question here...`}</pre>
                       {sub && <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, background: C.bg, padding: '1px 8px', borderRadius: 6 }}>{sub.paper}</span>}
                       <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, background: C.bg, padding: '1px 8px', borderRadius: 6 }}>{q.difficulty}</span>
                       {q.pyq_year && <span style={{ fontSize: 11, fontWeight: 600, color: C.orange, background: '#fffbeb', padding: '1px 8px', borderRadius: 6 }}>PYQ {q.pyq_year}</span>}
+                      {q.pyq_exam && <span style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', padding: '1px 8px', borderRadius: 6 }}>{q.pyq_exam}</span>}
                     </div>
                     <div style={{
                       fontSize: 14, color: C.navy, fontWeight: 500, lineHeight: 1.5,
