@@ -35,7 +35,8 @@ const C = {
 function getTrialStatus(trialEnd) {
   if (!trialEnd) return { label: null, color: null }
   const now = new Date(); now.setHours(0, 0, 0, 0)
-  const end = new Date(trialEnd)
+  const [y, m, d] = trialEnd.split('-').map(Number)
+  const end = new Date(y, m - 1, d)
   const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
   if (diff > 0) return { label: `${diff}d left`, color: 'active' }
   return { label: 'Expired', color: 'expired' }

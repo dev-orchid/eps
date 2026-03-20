@@ -13,7 +13,7 @@ function TrialBanner({ profile, navigate }) {
   if (!profile || profile.plan === 'Premium') return null
 
   const now = new Date(); now.setHours(0, 0, 0, 0)
-  const trialEnd = profile.trial_end ? new Date(profile.trial_end) : null
+  const trialEnd = profile.trial_end ? (() => { const [y, m, d] = profile.trial_end.split('-').map(Number); return new Date(y, m - 1, d) })() : null
   const daysLeft = trialEnd ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)) : 0
   const isExpired = !trialEnd || daysLeft <= 0
   const isUrgent = daysLeft <= 3 && daysLeft > 0
