@@ -42,12 +42,12 @@ const PAPER_META = {
 }
 
 const PYQ_EXAMS = [
-  { key: 'UPSC Prelims', label: 'UPSC Prelims', color: '#ef4444' },
-  { key: 'BPSC', label: 'BPSC', color: '#f59e0b' },
-  { key: 'Bihar Daroga Mains (BPSSC SI)', label: 'Bihar Daroga Mains', color: '#78716c' },
-  { key: 'UPPSC', label: 'UPPSC', color: '#0ea5e9' },
-  { key: 'MPSC', label: 'MPSC', color: '#14b8a6' },
-  { key: 'SSC CGL', label: 'SSC CGL', color: '#8b5cf6' },
+  { key: 'UPSC Prelims', label: 'UPSC Prelims', color: '#ef4444', paper: 'Prelims' },
+  { key: 'BPSC', label: 'BPSC', color: '#f59e0b', paper: 'Prelims' },
+  { key: 'Bihar Daroga Mains (BPSSC SI)', label: 'Bihar Daroga Mains', color: '#78716c', paper: 'BPSSC SI Mains' },
+  { key: 'UPPSC', label: 'UPPSC', color: '#0ea5e9', paper: 'Prelims' },
+  { key: 'MPSC', label: 'MPSC', color: '#14b8a6', paper: 'Prelims' },
+  { key: 'SSC CGL', label: 'SSC CGL', color: '#8b5cf6', paper: 'Prelims' },
 ]
 
 // ─── Color System ───
@@ -440,11 +440,14 @@ export default function QuizHome() {
                   year={year}
                   color={examColor}
                   isGenerating={isGenerating}
-                  onStart={() => handleStart({
-                    paper: 'Prelims', count: 30,
-                    difficulty: 'medium', quiz_type: 'full_mock',
-                    pyq_exam: pyqExamFilter, pyq_year: parseInt(year),
-                  }, `pyq-${pyqExamFilter}-${year}`)}
+                  onStart={() => {
+                    const pyqPaper = PYQ_EXAMS.find(e => e.key === pyqExamFilter)?.paper || 'Prelims'
+                    handleStart({
+                      paper: pyqPaper, count: 100,
+                      difficulty: 'all', quiz_type: 'full_mock',
+                      pyq_exam: pyqExamFilter, pyq_year: parseInt(year),
+                    }, `pyq-${pyqExamFilter}-${year}`)
+                  }}
                 />
               )
             })}

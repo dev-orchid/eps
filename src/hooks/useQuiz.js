@@ -203,6 +203,21 @@ export function useQuiz() {
     if (err) setError(err.message)
   }
 
+  // Bulk insert answers in a single DB call
+  const submitAnswersBulk = async (attemptId, answersArray) => {
+    if (!answersArray.length) return
+    const rows = answersArray.map(a => ({
+      user_id: user.id,
+      attempt_id: attemptId,
+      question_id: a.question_id,
+      selected_option: a.selected_option,
+      is_correct: a.is_correct,
+      time_spent_seconds: a.time_spent || 0,
+    }))
+    const { error: err } = await supabase.from('quiz_answers').insert(rows)
+    if (err) setError(err.message)
+  }
+
   const completeAttempt = async (attemptId, { correct, wrong, skipped, timeTaken }) => {
     const total = correct + wrong + skipped
     const score = total > 0 ? (correct / total) * 100 : 0
@@ -277,6 +292,7 @@ export function useQuiz() {
     generateQuiz,
     fetchQuestions,
     submitAnswer,
+    submitAnswersBulk,
     completeAttempt,
     getQuestionCounts,
     getAttemptedCounts,

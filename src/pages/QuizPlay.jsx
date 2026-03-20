@@ -29,7 +29,7 @@ async function translateToHindi(text) {
 export default function QuizPlay() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { submitAnswer, completeAttempt, fetchQuestions } = useQuiz()
+  const { submitAnswer, submitAnswersBulk, completeAttempt, fetchQuestions } = useQuiz()
 
   const quizData = location.state
   const [questions, setQuestions] = useState(quizData?.questions || [])
@@ -172,25 +172,29 @@ export default function QuizPlay() {
     setFinishing(true)
 
     try {
-      // Submit any unrevealed answers
+      // 1. Collect all question IDs we still need correct answers for (single fetch)
+      const alreadyFetchedIds = new Set(fullQuestions.map(f => f.id))
+      const missingIds = questions.map(q => q.id).filter(id => !alreadyFetchedIds.has(id))
+      const newFull = missingIds.length > 0 ? await fetchQuestions(missingIds) : []
+      const allFull = [...fullQuestions, ...newFull]
+      const fullMap = Object.fromEntries(allFull.map(f => [f.id, f]))
+
+      // 2. Bulk-submit all unrevealed answers in one DB call
       const unrevealed = questions.filter(q => !revealed[q.id] && answers[q.id])
       if (unrevealed.length > 0) {
-        const full = await fetchQuestions(unrevealed.map(q => q.id))
-        for (const q of full) {
-          const isCorrect = answers[q.id] === q.correct_option
-          await submitAnswer(attemptId, q.id, answers[q.id], isCorrect, 0)
-        }
-        setFullQuestions(prev => [...prev, ...full])
-        unrevealed.forEach(q => setRevealed(prev => ({ ...prev, [q.id]: true })))
+        const bulkRows = unrevealed.map(q => ({
+          question_id: q.id,
+          selected_option: answers[q.id],
+          is_correct: answers[q.id] === fullMap[q.id]?.correct_option,
+        }))
+        await submitAnswersBulk(attemptId, bulkRows)
       }
 
-      // Calculate results
-      const allFull = [...fullQuestions, ...(await fetchQuestions(questions.filter(q => !fullQuestions.find(f => f.id === q.id)).map(q => q.id)))]
+      // 3. Calculate results
       let correct = 0, wrong = 0, skipped = 0
       questions.forEach(q => {
-        const full = allFull.find(f => f.id === q.id)
         if (!answers[q.id]) { skipped++; return }
-        if (full && answers[q.id] === full.correct_option) correct++
+        if (fullMap[q.id] && answers[q.id] === fullMap[q.id].correct_option) correct++
         else wrong++
       })
 
