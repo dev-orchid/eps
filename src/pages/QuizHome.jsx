@@ -292,10 +292,26 @@ export default function QuizHome() {
                             best={best}
                             attemptCount={attemptCt}
                             isGenerating={isGenerating}
-                            onStart={() => handleStart({
-                              paper, count: available,
-                              difficulty: 'all', quiz_type: 'full_mock',
-                            }, `mock-${paper}`)}
+                            generatingSet={isGenerating ? generatingSet : null}
+                            onStartSet={(setNum) => {
+                              const SET_SIZE = 50
+                              if (setNum == null) {
+                                // No sets, start all
+                                handleStart({
+                                  paper, count: available,
+                                  difficulty: 'all', quiz_type: 'full_mock',
+                                }, `mock-${paper}`)
+                              } else {
+                                const totalSets = Math.ceil(available / SET_SIZE)
+                                const qsInSet = setNum < totalSets ? SET_SIZE : available - (totalSets - 1) * SET_SIZE
+                                setGeneratingSet(setNum)
+                                handleStart({
+                                  paper, count: qsInSet,
+                                  difficulty: 'all', quiz_type: 'full_mock',
+                                  set_number: setNum,
+                                }, `mock-${paper}`)
+                              }
+                            }}
                           />
                         )
                       })}
@@ -740,7 +756,9 @@ function SectionHeader({ icon: Icon, title, subtitle }) {
   )
 }
 
-function MockTestCard({ paper, meta, available, attempted = 0, best, attemptCount, isGenerating, onStart }) {
+function MockTestCard({ paper, meta, available, attempted = 0, best, attemptCount, isGenerating, generatingSet, onStartSet }) {
+  const SET_SIZE = 50
+  const totalSets = available > SET_SIZE ? Math.ceil(available / SET_SIZE) : 0
   const score = best ? Number(best.score_percentage) : null
   const scoreColor = score !== null ? (score >= 70 ? C.green : score >= 40 ? C.amber : C.red) : null
   const progressPct = available > 0 ? Math.round((attempted / available) * 100) : 0
@@ -818,25 +836,67 @@ function MockTestCard({ paper, meta, available, attempted = 0, best, attemptCoun
         )}
 
         {/* Action */}
-        <button onClick={onStart} disabled={isGenerating || available === 0} style={{
-          width: '100%', padding: '10px', borderRadius: 10, border: 'none',
-          background: available === 0 ? C.bg : attemptCount > 0 ? C.white : `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
-          color: available === 0 ? C.hint : attemptCount > 0 ? C.primary : C.white,
-          fontSize: 13, fontWeight: 700, cursor: available === 0 || isGenerating ? 'default' : 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          border: attemptCount > 0 && available > 0 ? `1.5px solid ${C.primary}` : 'none',
-          transition: 'all 0.15s',
-        }}>
-          {isGenerating ? (
-            <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Preparing {available} Questions...</>
-          ) : available === 0 ? (
-            <><Lock size={14} /> No Questions Available</>
-          ) : attemptCount > 0 ? (
-            <><RotateCcw size={14} /> Retake All {available} Questions</>
-          ) : (
-            <><Play size={14} /> Start Test ({available} Qs)</>
-          )}
-        </button>
+        {available === 0 ? (
+          <button disabled style={{
+            width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+            background: C.bg, color: C.hint,
+            fontSize: 13, fontWeight: 700, cursor: 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <Lock size={14} /> No Questions Available
+          </button>
+        ) : totalSets > 0 ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.hint, marginBottom: 6 }}>
+              {totalSets} Sets · {SET_SIZE} questions each
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 6 }}>
+              {Array.from({ length: totalSets }, (_, i) => {
+                const setNum = i + 1
+                const setStart = i * SET_SIZE + 1
+                const setEnd = Math.min((i + 1) * SET_SIZE, available)
+                const qsInSet = setEnd - setStart + 1
+                const isThisGenerating = isGenerating && generatingSet === setNum
+                return (
+                  <button key={setNum} onClick={() => onStartSet(setNum)} disabled={isGenerating} style={{
+                    padding: '8px 10px', borderRadius: 8, border: 'none',
+                    background: C.primaryBg, color: C.primary,
+                    fontSize: 12, fontWeight: 600, cursor: isGenerating ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    transition: 'all 0.15s',
+                  }}
+                    onMouseEnter={e => { if (!isGenerating) { e.currentTarget.style.background = C.primary; e.currentTarget.style.color = C.white } }}
+                    onMouseLeave={e => { e.currentTarget.style.background = C.primaryBg; e.currentTarget.style.color = C.primary }}
+                  >
+                    {isThisGenerating ? (
+                      <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <><Play size={11} /> Set {setNum} <span style={{ fontWeight: 400, opacity: 0.7 }}>({qsInSet})</span></>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => onStartSet(null)} disabled={isGenerating} style={{
+            width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+            background: attemptCount > 0 ? C.white : `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
+            color: attemptCount > 0 ? C.primary : C.white,
+            fontSize: 13, fontWeight: 700, cursor: isGenerating ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            border: attemptCount > 0 ? `1.5px solid ${C.primary}` : 'none',
+            transition: 'all 0.15s',
+          }}>
+            {isGenerating ? (
+              <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Preparing...</>
+            ) : attemptCount > 0 ? (
+              <><RotateCcw size={14} /> Retake ({available} Qs)</>
+            ) : (
+              <><Play size={14} /> Start Test ({available} Qs)</>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
