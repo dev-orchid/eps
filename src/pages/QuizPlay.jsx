@@ -40,6 +40,7 @@ export default function QuizPlay() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [quizComplete, setQuizComplete] = useState(false)
   const [finishing, setFinishing] = useState(false)
+  const finishingRef = useRef(false)
   const startTimeRef = useRef(Date.now())
   const questionStartRef = useRef(Date.now())
 
@@ -125,23 +126,29 @@ export default function QuizPlay() {
     setAnswers(prev => ({ ...prev, [questionId]: opt }))
   }
 
+  const checkingRef = useRef(false)
   const checkAnswer = useCallback(async () => {
-    if (!questionId || revealed[questionId]) return
+    if (!questionId || revealed[questionId] || checkingRef.current) return
+    checkingRef.current = true
 
-    // Fetch the full question with correct answer
-    const full = await fetchQuestions([questionId])
-    if (full.length > 0) {
-      setFullQuestions(prev => [...prev, ...full])
-    }
-    setRevealed(prev => ({ ...prev, [questionId]: true }))
+    try {
+      // Fetch the full question with correct answer
+      const full = await fetchQuestions([questionId])
+      if (full.length > 0) {
+        setFullQuestions(prev => [...prev, ...full])
+      }
+      setRevealed(prev => ({ ...prev, [questionId]: true }))
 
-    // Record answer
-    const correctOption = full[0]?.correct_option
-    const isCorrect = answers[questionId] === correctOption
-    const timeSpent = Math.floor((Date.now() - questionStartRef.current) / 1000)
+      // Record answer
+      const correctOption = full[0]?.correct_option
+      const isCorrect = answers[questionId] === correctOption
+      const timeSpent = Math.floor((Date.now() - questionStartRef.current) / 1000)
 
-    if (attemptId) {
-      await submitAnswer(attemptId, questionId, answers[questionId] || null, isCorrect, timeSpent)
+      if (attemptId) {
+        await submitAnswer(attemptId, questionId, answers[questionId] || null, isCorrect, timeSpent)
+      }
+    } finally {
+      checkingRef.current = false
     }
   }, [questionId, answers, revealed, attemptId, fetchQuestions, submitAnswer])
 
@@ -160,7 +167,8 @@ export default function QuizPlay() {
   }
 
   const handleFinish = useCallback(async () => {
-    if (quizComplete || finishing) return
+    if (finishingRef.current || quizComplete) return
+    finishingRef.current = true
     setFinishing(true)
 
     try {
@@ -198,9 +206,10 @@ export default function QuizPlay() {
         replace: true,
       })
     } catch {
+      finishingRef.current = false
       setFinishing(false)
     }
-  }, [quizComplete, finishing, questions, answers, revealed, fullQuestions, attemptId, elapsedSeconds])
+  }, [quizComplete, questions, answers, revealed, fullQuestions, attemptId, elapsedSeconds])
 
   if (!quizData || !currentQ) return null
 
