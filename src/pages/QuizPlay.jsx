@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuiz } from '../hooks/useQuiz'
-import { ChevronLeft, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Flag } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Flag, Languages } from 'lucide-react'
 
 const C = {
   teal: '#14b8a6', tealDark: '#0d9488', tealLight: '#e0f7f0',
@@ -13,6 +13,18 @@ const C = {
 }
 
 const OPTIONS = ['A', 'B', 'C', 'D']
+
+async function translateToHindi(text) {
+  try {
+    const res = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(text)}`
+    )
+    const data = await res.json()
+    return data[0].map(s => s[0]).join('')
+  } catch {
+    return null
+  }
+}
 
 export default function QuizPlay() {
   const location = useLocation()
@@ -29,6 +41,10 @@ export default function QuizPlay() {
   const [quizComplete, setQuizComplete] = useState(false)
   const startTimeRef = useRef(Date.now())
   const questionStartRef = useRef(Date.now())
+
+  const [showHindi, setShowHindi] = useState(false)
+  const [hindiCache, setHindiCache] = useState({}) // { questionId: { question_text, option_a, ... } }
+  const [translating, setTranslating] = useState(false)
 
   const attemptId = quizData?.attempt_id
   const timeLimit = quizData?.time_limit_minutes
@@ -53,6 +69,52 @@ export default function QuizPlay() {
   useEffect(() => {
     if (!quizData) navigate('/quiz', { replace: true })
   }, [quizData, navigate])
+
+  // Translate current question to Hindi when toggle is on
+  useEffect(() => {
+    if (!showHindi || !questions[currentIndex]) return
+    const qId = questions[currentIndex].id
+    if (hindiCache[qId]) return // already translated
+    let cancelled = false
+    ;(async () => {
+      setTranslating(true)
+      const q = questions[currentIndex]
+      const [qText, oA, oB, oC, oD] = await Promise.all([
+        translateToHindi(q.question_text),
+        translateToHindi(q.option_a),
+        translateToHindi(q.option_b),
+        translateToHindi(q.option_c),
+        translateToHindi(q.option_d),
+      ])
+      if (!cancelled) {
+        setHindiCache(prev => ({
+          ...prev,
+          [qId]: { question_text: qText, option_a: oA, option_b: oB, option_c: oC, option_d: oD },
+        }))
+        setTranslating(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [showHindi, currentIndex, questions])
+
+  // Translate explanation when revealed and Hindi is on
+  const revealedExplanation = fullQuestions.find(f => f.id === questions[currentIndex]?.id)?.explanation
+  useEffect(() => {
+    if (!showHindi || !revealedExplanation || !questions[currentIndex]) return
+    const qId = questions[currentIndex].id
+    if (hindiCache[qId]?.explanation) return
+    let cancelled = false
+    ;(async () => {
+      const hindiExp = await translateToHindi(revealedExplanation)
+      if (!cancelled && hindiExp) {
+        setHindiCache(prev => ({
+          ...prev,
+          [qId]: { ...prev[qId], explanation: hindiExp },
+        }))
+      }
+    })()
+    return () => { cancelled = true }
+  }, [showHindi, revealedExplanation, currentIndex, questions])
 
   const currentQ = questions[currentIndex]
   const questionId = currentQ?.id
@@ -213,10 +275,10 @@ export default function QuizPlay() {
         background: C.white, border: `1px solid ${C.border}`, borderRadius: 16,
         padding: 28, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 20,
       }}>
-        {/* Tags */}
-        {currentQ.tags?.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-            {currentQ.tags.map(t => (
+        {/* Tags + Hindi Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {currentQ.tags?.map(t => (
               <span key={t} style={{
                 fontSize: 11, fontWeight: 600, color: C.teal,
                 background: C.tealLight, padding: '2px 8px', borderRadius: 6,
@@ -225,7 +287,23 @@ export default function QuizPlay() {
               </span>
             ))}
           </div>
-        )}
+          <button
+            onClick={() => setShowHindi(prev => !prev)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 8,
+              border: `1.5px solid ${showHindi ? C.teal : C.border}`,
+              background: showHindi ? C.tealLight : C.white,
+              color: showHindi ? C.tealDark : C.slate,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            title={showHindi ? 'Show English only' : 'Show Hindi translation'}
+          >
+            <Languages size={14} />
+            {showHindi ? 'हिंदी ✓' : 'हिंदी'}
+          </button>
+        </div>
 
         {/* Question Text */}
         <div style={{
@@ -233,6 +311,16 @@ export default function QuizPlay() {
           marginBottom: 24, whiteSpace: 'pre-line',
         }}>
           {currentQ.question_text}
+          {showHindi && hindiCache[questionId]?.question_text && (
+            <div style={{ marginTop: 8, color: '#6b21a8', fontSize: 15, fontWeight: 500 }}>
+              {hindiCache[questionId].question_text}
+            </div>
+          )}
+          {showHindi && translating && !hindiCache[questionId] && (
+            <div style={{ marginTop: 8, color: C.muted, fontSize: 13, fontStyle: 'italic' }}>
+              अनुवाद हो रहा है...
+            </div>
+          )}
         </div>
 
         {/* Options */}
@@ -280,7 +368,14 @@ export default function QuizPlay() {
                 }}>
                   {opt}
                 </span>
-                <span style={{ paddingTop: 3 }}>{optText}</span>
+                <span style={{ paddingTop: 3 }}>
+                  {optText}
+                  {showHindi && hindiCache[questionId]?.[optKey] && (
+                    <span style={{ display: 'block', color: '#6b21a8', fontSize: 13, fontWeight: 400, marginTop: 2 }}>
+                      {hindiCache[questionId][optKey]}
+                    </span>
+                  )}
+                </span>
                 {isRevealed && isCorrectOpt && <CheckCircle size={20} color={C.green} style={{ marginLeft: 'auto', flexShrink: 0, marginTop: 3 }} />}
                 {isRevealed && isWrongSelected && <XCircle size={20} color={C.red} style={{ marginLeft: 'auto', flexShrink: 0, marginTop: 3 }} />}
               </button>
@@ -314,6 +409,11 @@ export default function QuizPlay() {
             </div>
             <div style={{ fontSize: 14, color: '#78350f', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
               {revealedQ.explanation}
+              {showHindi && hindiCache[questionId]?.explanation && (
+                <div style={{ marginTop: 8, color: '#6b21a8', fontSize: 13 }}>
+                  {hindiCache[questionId].explanation}
+                </div>
+              )}
             </div>
           </div>
         )}
