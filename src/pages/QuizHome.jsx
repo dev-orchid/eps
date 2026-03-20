@@ -74,7 +74,7 @@ const C = {
 
 export default function QuizHome() {
   const navigate = useNavigate()
-  const { subjects, attempts, loading, generateQuiz, getQuestionCounts, getAttemptedCounts } = useQuiz()
+  const { subjects, attempts, loading, generateQuiz, getQuestionCounts, getPYQCounts, getAttemptedCounts } = useQuiz()
   const [activeTab, setActiveTab] = useState('series')
   const [expandedExamSubject, setExpandedExamSubject] = useState(null)
   const [expandedMockExam, setExpandedMockExam] = useState(null)
@@ -95,11 +95,13 @@ export default function QuizHome() {
 
   // PYQ tab state
   const [pyqExamFilter, setPyqExamFilter] = useState('UPSC Prelims')
+  const [pyqCounts, setPyqCounts] = useState({}) // { "exam__year": count }
 
   useEffect(() => {
     getQuestionCounts().then(setQuestionCounts)
     getAttemptedCounts().then(setAttemptedCounts)
-  }, [getQuestionCounts, getAttemptedCounts])
+    getPYQCounts().then(setPyqCounts)
+  }, [getQuestionCounts, getAttemptedCounts, getPYQCounts])
 
   const completedAttempts = attempts.filter(a => a.status === 'completed')
   const avgScore = completedAttempts.length > 0
@@ -433,17 +435,20 @@ export default function QuizHome() {
             {YEARS.filter(y => y).map(year => {
               const examColor = PYQ_EXAMS.find(e => e.key === pyqExamFilter)?.color || C.primary
               const isGenerating = generating === `pyq-${pyqExamFilter}-${year}`
+              const pyqKey = `${pyqExamFilter}__${year}`
+              const qCount = pyqCounts[pyqKey] || 0
               return (
                 <PYQCard
                   key={`${pyqExamFilter}-${year}`}
                   exam={pyqExamFilter}
                   year={year}
                   color={examColor}
+                  questionCount={qCount}
                   isGenerating={isGenerating}
                   onStart={() => {
                     const pyqPaper = PYQ_EXAMS.find(e => e.key === pyqExamFilter)?.paper || 'Prelims'
                     handleStart({
-                      paper: pyqPaper, count: 100,
+                      paper: pyqPaper, count: Math.max(qCount, 100),
                       difficulty: 'all', quiz_type: 'full_mock',
                       pyq_exam: pyqExamFilter, pyq_year: parseInt(year),
                     }, `pyq-${pyqExamFilter}-${year}`)
@@ -1088,16 +1093,20 @@ function SubjectRow({ subject, count, attempted = 0, remaining = 0, best, attemp
   )
 }
 
-function PYQCard({ exam, year, color, isGenerating, onStart }) {
+function PYQCard({ exam, year, color, questionCount = 0, isGenerating, onStart }) {
+  const hasQuestions = questionCount > 0
+  const duration = Math.max(30, Math.round(questionCount * 1.2))
   return (
     <div style={{
       background: C.white, borderRadius: 12, overflow: 'hidden',
-      border: `1px solid ${C.border}`, transition: 'box-shadow 0.2s, transform 0.2s',
+      border: `1px solid ${hasQuestions ? C.border : C.borderLight}`,
+      transition: 'box-shadow 0.2s, transform 0.2s',
+      opacity: hasQuestions ? 1 : 0.55,
     }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 3px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+      onMouseEnter={e => { if (hasQuestions) { e.currentTarget.style.boxShadow = '0 3px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = '' }}
     >
-      <div style={{ height: 3, background: color }} />
+      <div style={{ height: 3, background: hasQuestions ? color : C.border }} />
       <div style={{ padding: '16px' }}>
         <div style={{
           fontSize: 28, fontWeight: 800, color: C.navy, lineHeight: 1, marginBottom: 4,
@@ -1108,31 +1117,46 @@ function PYQCard({ exam, year, color, isGenerating, onStart }) {
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <FileText size={11} color={C.hint} />
-            <span style={{ fontSize: 11, color: C.hint }}>30 Qs</span>
+            <FileText size={11} color={hasQuestions ? color : C.hint} />
+            <span style={{ fontSize: 11, color: hasQuestions ? C.slate : C.hint, fontWeight: hasQuestions ? 600 : 400 }}>
+              {hasQuestions ? `${questionCount} Qs` : 'No Qs'}
+            </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Clock size={11} color={C.hint} />
-            <span style={{ fontSize: 11, color: C.hint }}>60 min</span>
-          </div>
+          {hasQuestions && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Clock size={11} color={C.hint} />
+              <span style={{ fontSize: 11, color: C.hint }}>{duration} min</span>
+            </div>
+          )}
         </div>
 
-        <button onClick={onStart} disabled={isGenerating} style={{
-          width: '100%', padding: '9px', borderRadius: 8, border: `1.5px solid ${color}`,
-          background: C.white, color: color,
-          fontSize: 12, fontWeight: 600, cursor: isGenerating ? 'default' : 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-          transition: 'all 0.15s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = C.white }}
-          onMouseLeave={e => { e.currentTarget.style.background = C.white; e.currentTarget.style.color = color }}
-        >
-          {isGenerating ? (
-            <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-          ) : (
-            <><Play size={12} /> Attempt Paper</>
-          )}
-        </button>
+        {hasQuestions ? (
+          <button onClick={onStart} disabled={isGenerating} style={{
+            width: '100%', padding: '9px', borderRadius: 8, border: `1.5px solid ${color}`,
+            background: C.white, color: color,
+            fontSize: 12, fontWeight: 600, cursor: isGenerating ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+            transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = C.white }}
+            onMouseLeave={e => { e.currentTarget.style.background = C.white; e.currentTarget.style.color = color }}
+          >
+            {isGenerating ? (
+              <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <><Play size={12} /> Attempt Paper</>
+            )}
+          </button>
+        ) : (
+          <button disabled style={{
+            width: '100%', padding: '9px', borderRadius: 8, border: `1px solid ${C.border}`,
+            background: C.bg, color: C.hint,
+            fontSize: 12, fontWeight: 600, cursor: 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          }}>
+            Coming Soon
+          </button>
+        )}
       </div>
     </div>
   )

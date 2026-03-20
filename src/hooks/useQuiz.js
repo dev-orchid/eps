@@ -263,6 +263,32 @@ export function useQuiz() {
     return counts
   }, [])
 
+  // Get PYQ question counts grouped by exam + year
+  const getPYQCounts = useCallback(async () => {
+    const counts = {} // { "Bihar Daroga Mains (BPSSC SI)__2021": 100 }
+    const pageSize = 1000
+    let from = 0
+    let hasMore = true
+    while (hasMore) {
+      const { data, error: err } = await supabase
+        .from('quiz_questions')
+        .select('pyq_exam, pyq_year')
+        .eq('is_active', true)
+        .eq('source', 'pyq')
+        .not('pyq_exam', 'is', null)
+        .not('pyq_year', 'is', null)
+        .range(from, from + pageSize - 1)
+      if (err) return counts
+      ;(data || []).forEach(q => {
+        const key = `${q.pyq_exam}__${q.pyq_year}`
+        counts[key] = (counts[key] || 0) + 1
+      })
+      hasMore = data && data.length === pageSize
+      from += pageSize
+    }
+    return counts
+  }, [])
+
   // Get count of unique questions attempted by user per subject
   const getAttemptedCounts = useCallback(async () => {
     if (!user) return {}
@@ -297,6 +323,7 @@ export function useQuiz() {
     submitAnswersBulk,
     completeAttempt,
     getQuestionCounts,
+    getPYQCounts,
     getAttemptedCounts,
     refetch: fetchAttempts,
   }
