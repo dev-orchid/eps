@@ -3,10 +3,12 @@ import { useAuth } from '../context/AuthContext'
 import { useProfiles } from '../hooks/useProfiles'
 import { useRoles } from '../hooks/useRoles'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import {
   Users, Shield, UserPlus, UserCheck, Clock, AlertTriangle,
   ArrowRight, CalendarDays, TrendingUp, Crown, Search,
   CalendarPlus, ChevronDown, Trash2, Loader2, RefreshCw,
+  CheckCircle, XCircle, Bell,
 } from 'lucide-react'
 
 const C = {
@@ -129,6 +131,37 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [extensionRequests, setExtensionRequests] = useState([])
+  const [extensionLoading, setExtensionLoading] = useState(true)
+
+  const fetchExtensionRequests = async () => {
+    const { data } = await supabase
+      .from('trial_extension_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+    setExtensionRequests(data || [])
+    setExtensionLoading(false)
+  }
+
+  useEffect(() => { fetchExtensionRequests() }, [])
+
+  const handleApproveExtension = async (reqId, userId) => {
+    await extendTrial(userId, 7)
+    await supabase
+      .from('trial_extension_requests')
+      .update({ status: 'approved', resolved_at: new Date().toISOString(), resolved_by: user.id })
+      .eq('id', reqId)
+    fetchExtensionRequests()
+  }
+
+  const handleDenyExtension = async (reqId) => {
+    await supabase
+      .from('trial_extension_requests')
+      .update({ status: 'denied', resolved_at: new Date().toISOString(), resolved_by: user.id })
+      .eq('id', reqId)
+    fetchExtensionRequests()
+  }
 
   const firstName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Admin'
   const greetingHour = new Date().getHours()
@@ -169,7 +202,7 @@ export default function AdminDashboard() {
   }
   const handleExtend = async (id, days) => { await extendTrial(id, days) }
   const handleDelete = async (id) => { await deleteProfile(id); setConfirmDelete(null) }
-  const handleRefresh = async () => { setRefreshing(true); await refetch(); setRefreshing(false) }
+  const handleRefresh = async () => { setRefreshing(true); await refetch(); await fetchExtensionRequests(); setRefreshing(false) }
 
   if (loading) {
     return (
@@ -218,6 +251,65 @@ export default function AdminDashboard() {
           color={C.orange} bg={C.orangeLight} borderColor={C.orange}
         />
       </div>
+
+      {/* Pending Trial Extension Requests */}
+      {extensionRequests.length > 0 && (
+        <div style={{
+          background: C.white, border: '1px solid ' + C.border, borderRadius: 14,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: 24,
+        }}>
+          <div style={{
+            padding: '14px 20px', borderBottom: '1px solid #f1f5f9',
+            display: 'flex', alignItems: 'center', gap: 8, background: C.orangeLight,
+          }}>
+            <Bell size={16} color={C.orange} />
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: C.navy, margin: 0 }}>
+              Trial Extension Requests ({extensionRequests.length})
+            </h2>
+          </div>
+          <div>
+            {extensionRequests.map((req, i) => {
+              const reqUser = profiles.find(p => p.id === req.user_id)
+              return (
+                <div key={req.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 20px', gap: 12,
+                  borderBottom: i < extensionRequests.length - 1 ? '1px solid ' + C.border : 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%', background: C.orange, color: C.white,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0,
+                    }}>{getInitials(reqUser?.full_name, reqUser?.email)}</div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: C.navyLight }}>
+                        {reqUser?.full_name || reqUser?.email || 'Unknown User'}
+                      </p>
+                      <p style={{ margin: 0, fontSize: 11, color: C.muted }}>
+                        {reqUser?.email} &middot; Requested {new Date(req.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => handleApproveExtension(req.id, req.user_id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8,
+                      border: 'none', background: C.green, color: C.white, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      <CheckCircle size={14} /> Approve (+7d)
+                    </button>
+                    <button onClick={() => handleDenyExtension(req.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8,
+                      border: '1px solid ' + C.border, background: C.white, color: C.red, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      <XCircle size={14} /> Deny
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Two-column: Recent Activity + Role Overview */}
       <div className="admin-mid-grid">

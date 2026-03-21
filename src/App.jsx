@@ -25,7 +25,7 @@ import QuizResults from './pages/QuizResults'
 import Notes from './pages/Notes'
 import Syllabus from './pages/Syllabus'
 import QuizAnalytics from './pages/QuizAnalytics'
-import TrialBanner from './components/TrialBanner'
+import TrialBanner, { useTrialExpired } from './components/TrialBanner'
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
@@ -82,6 +82,12 @@ function SmartDashboard() {
 }
 
 function AppLayout() {
+  const trialExpired = useTrialExpired()
+  const location = useLocation()
+  // Allow access to /plans and /profile even when trial expired
+  const allowedWhileExpired = location.pathname === '/plans' || location.pathname === '/profile'
+  const blockContent = trialExpired && !allowedWhileExpired
+
   return (
     <div style={{
       display: 'flex',
@@ -99,16 +105,22 @@ function AppLayout() {
         className="app-main-area"
       >
         <TopHeader />
-        <TrialBanner />
-        <main style={{
-          flex: 1,
-          padding: '24px 32px 32px',
-          width: '100%',
-          overflow: 'auto',
-          boxSizing: 'border-box',
-        }}>
-          <ProtectedRoute />
-        </main>
+        {blockContent ? (
+          <TrialBanner />
+        ) : (
+          <>
+            <TrialBanner />
+            <main style={{
+              flex: 1,
+              padding: '24px 32px 32px',
+              width: '100%',
+              overflow: 'auto',
+              boxSizing: 'border-box',
+            }}>
+              <ProtectedRoute />
+            </main>
+          </>
+        )}
       </div>
       <style>{`
         @media (max-width: 767px) {
