@@ -236,6 +236,11 @@ const FEEDS = [
   { rss: 'https://www.livemint.com/rss/technology', source: 'LiveMint', fallback: 'Science & Technology' },
   // Environment & Science
   { rss: 'https://www.downtoearth.org.in/rss/news', source: 'Down To Earth', fallback: 'Environment & Ecology' },
+  // Sports
+  { rss: 'https://timesofindia.indiatimes.com/rssfeeds/4719148.cms', source: 'TOI', fallback: 'Sports' },
+  { rss: 'https://indianexpress.com/section/sports/feed/', source: 'Indian Express', fallback: 'Sports' },
+  // Art & Culture / Entertainment
+  { rss: 'https://timesofindia.indiatimes.com/rssfeeds/913168846.cms', source: 'TOI', fallback: 'Art & Culture' },
 ]
 
 /**
@@ -277,17 +282,47 @@ export async function fetchGoogleNews() {
     return true
   })
 
-  // Sort: prioritize UPSC-heavy categories first
-  const PRIORITY_ORDER = [
+  // Ensure balanced representation across all categories
+  // Take up to MIN_PER_CAT from each category first, then fill remaining slots
+  const ALL_CATEGORIES = [
     'Polity & Governance', 'Economy', 'International Relations',
     'Environment & Ecology', 'Science & Technology', 'Social Issues',
     'Security & Defence', 'Art & Culture', 'Sports', 'General',
   ]
-  deduped.sort((a, b) => {
-    const ai = PRIORITY_ORDER.indexOf(a.category)
-    const bi = PRIORITY_ORDER.indexOf(b.category)
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-  })
+  const MAX_TOTAL = 50
+  const MIN_PER_CAT = 3
 
-  return deduped.slice(0, 40)
+  // Group by category
+  const byCategory = {}
+  for (const cat of ALL_CATEGORIES) byCategory[cat] = []
+  for (const item of deduped) {
+    const cat = ALL_CATEGORIES.includes(item.category) ? item.category : 'General'
+    byCategory[cat].push(item)
+  }
+
+  // Phase 1: take up to MIN_PER_CAT from each category
+  const result = []
+  const used = new Set()
+  for (const cat of ALL_CATEGORIES) {
+    const items = byCategory[cat].slice(0, MIN_PER_CAT)
+    for (const item of items) {
+      result.push(item)
+      used.add(item.title)
+    }
+  }
+
+  // Phase 2: fill remaining slots with leftover articles in original order
+  const remaining = MAX_TOTAL - result.length
+  if (remaining > 0) {
+    let added = 0
+    for (const item of deduped) {
+      if (added >= remaining) break
+      if (!used.has(item.title)) {
+        result.push(item)
+        added++
+      }
+    }
+  }
+
+  return result
 }
