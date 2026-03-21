@@ -212,6 +212,8 @@ export default function QuestionBank() {
         'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
         'BPSSC SI': 'BPSSC SI Mains',
         'BPSSC': 'BPSSC SI Mains',
+        'SSC CGL': 'SSC CGL',
+        'SSC': 'SSC CGL',
       }
       const insertData = parsed.map(q => {
         let subjectId = q.subject_id || null
@@ -358,6 +360,7 @@ Generate real exam-quality questions with authentic ${examName} patterns. Includ
                   {(() => {
                     const examPaperMap = {
                       'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
+                      'SSC CGL': 'SSC CGL',
                     }
                     const paperFilter = examPaperMap[genConfig.pyq_exam]
                     const filtered = paperFilter ? subjects.filter(s => s.paper === paperFilter) : subjects

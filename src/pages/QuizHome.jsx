@@ -9,12 +9,13 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner'
 
 // ─── Constants ───
-const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science', 'BPSSC SI Mains']
+const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science', 'BPSSC SI Mains', 'SSC CGL']
 
 // Group papers under exams for display
 const EXAM_GROUPS = [
   { key: 'UPSC / State PSC', papers: ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science'], color: '#6366f1', desc: 'UPSC CSE, BPSC, UPPSC, MPSC & other State PSCs' },
   { key: 'Bihar Daroga Mains (BPSSC SI)', papers: ['BPSSC SI Mains'], color: '#78716c', desc: 'Sub-Inspector Mains Examination' },
+  { key: 'SSC CGL', papers: ['SSC CGL'], color: '#8b5cf6', desc: 'Staff Selection Commission - Combined Graduate Level' },
 ]
 const DIFFICULTIES = [
   { key: 'easy', label: 'Easy', desc: 'Basics & fundamentals', color: '#22c55e', bg: '#f0fdf4' },
@@ -39,6 +40,7 @@ const PAPER_META = {
   'Prelims': { title: 'Prelims Full Mock', desc: 'Complete UPSC Prelims', color: '#ef4444', bg: '#fef2f2', duration: 120, questions: 100, marks: 200 },
   'Science': { title: 'Science Series', desc: 'Physics, Chemistry, Biology', color: '#8b5cf6', bg: '#f5f3ff', duration: 90, questions: 50, marks: 200 },
   'BPSSC SI Mains': { title: 'Bihar Daroga Mains', desc: 'BPSSC SI Mains Subjects', color: '#78716c', bg: '#f5f5f4', duration: 120, questions: 100, marks: 200 },
+  'SSC CGL': { title: 'SSC CGL', desc: 'Combined Graduate Level Exam', color: '#8b5cf6', bg: '#f5f3ff', duration: 60, questions: 100, marks: 200 },
 }
 
 const PYQ_EXAMS = [
