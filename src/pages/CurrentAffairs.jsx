@@ -94,6 +94,7 @@ export default function CurrentAffairs() {
   const [fetchingNews, setFetchingNews] = useState(false)
   const [newsError, setNewsError] = useState(null)
   const [fetchProgress, setFetchProgress] = useState('')
+  const [pendingStudyIds, setPendingStudyIds] = useState(new Set())
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -108,14 +109,24 @@ export default function CurrentAffairs() {
   }
 
   const handleAddToStudy = async (affair) => {
-    const gsPaper = GS_PAPER_MAP[affair.category] || 'General'
-    await addSession(
-      `Current Affairs (${gsPaper}): ${affair.category}`,
-      30,
-      affair.date,
-      `${affair.title}${affair.summary ? '\n\n' + affair.summary : ''}${affair.source_url ? '\n\n' + affair.source_url : ''}`
-    )
-    await markAddedToStudy(affair.id)
+    if (affair.added_to_study || pendingStudyIds.has(affair.id)) return
+    setPendingStudyIds(prev => new Set(prev).add(affair.id))
+    try {
+      const gsPaper = GS_PAPER_MAP[affair.category] || 'General'
+      await addSession(
+        `Current Affairs (${gsPaper}): ${affair.category}`,
+        30,
+        affair.date,
+        `${affair.title}${affair.summary ? '\n\n' + affair.summary : ''}${affair.source_url ? '\n\n' + affair.source_url : ''}`
+      )
+      await markAddedToStudy(affair.id)
+    } finally {
+      setPendingStudyIds(prev => {
+        const next = new Set(prev)
+        next.delete(affair.id)
+        return next
+      })
+    }
   }
 
   const handleAddAsTask = async (affair) => {
@@ -789,20 +800,20 @@ export default function CurrentAffairs() {
 
                         <button
                           onClick={() => handleAddToStudy(affair)}
-                          disabled={affair.added_to_study}
+                          disabled={affair.added_to_study || pendingStudyIds.has(affair.id)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 4,
                             padding: '5px 10px', fontSize: 12, fontWeight: 500,
-                            border: affair.added_to_study ? '1px solid #d1fae5' : '1px solid #14b8a6',
+                            border: (affair.added_to_study || pendingStudyIds.has(affair.id)) ? '1px solid #d1fae5' : '1px solid #14b8a6',
                             borderRadius: 6,
-                            backgroundColor: affair.added_to_study ? '#ecfdf5' : 'transparent',
-                            color: affair.added_to_study ? '#059669' : '#14b8a6',
-                            cursor: affair.added_to_study ? 'default' : 'pointer',
-                            opacity: affair.added_to_study ? 0.8 : 1,
+                            backgroundColor: (affair.added_to_study || pendingStudyIds.has(affair.id)) ? '#ecfdf5' : 'transparent',
+                            color: (affair.added_to_study || pendingStudyIds.has(affair.id)) ? '#059669' : '#14b8a6',
+                            cursor: (affair.added_to_study || pendingStudyIds.has(affair.id)) ? 'default' : 'pointer',
+                            opacity: (affair.added_to_study || pendingStudyIds.has(affair.id)) ? 0.8 : 1,
                           }}
                         >
                           <BookOpen size={13} />
-                          {affair.added_to_study ? 'In Study Log \u2713' : 'Add to Study'}
+                          {pendingStudyIds.has(affair.id) ? 'Adding...' : affair.added_to_study ? 'In Study Log \u2713' : 'Add to Study'}
                         </button>
 
                         <button
