@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useCurrentAffairs } from '../hooks/useCurrentAffairs'
 import { useStudySessions } from '../hooks/useStudySessions'
-import { useTasks } from '../hooks/useTasks'
+import { useNotes } from '../hooks/useNotes'
 import { fetchGoogleNews } from '../lib/newsFetcher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
@@ -48,6 +48,20 @@ const GS_PAPER_MAP = {
   'General': 'Prelims',
 }
 
+// Maps current-affairs categories to notes subject IDs
+const CATEGORY_TO_SUBJECT = {
+  'Polity & Governance': 'polity',
+  'Economy': 'economy',
+  'International Relations': 'ir',
+  'Environment & Ecology': 'environment',
+  'Science & Technology': 'science',
+  'Social Issues': 'current',
+  'Security & Defence': 'current',
+  'Art & Culture': 'history',
+  'Sports': 'general',
+  'General': 'general',
+}
+
 const todayStr = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -77,7 +91,7 @@ function isThisWeek(dateStr) {
 export default function CurrentAffairs() {
   const { affairs, loading, error, addAffair, addBulkAffairs, deleteAffair, toggleRead, markAddedToStudy } = useCurrentAffairs()
   const { addSession } = useStudySessions()
-  const { addTask } = useTasks()
+  const { addNote } = useNotes()
 
   const [showForm, setShowForm] = useState(false)
   const [filterCategory, setFilterCategory] = useState('All')
@@ -95,6 +109,8 @@ export default function CurrentAffairs() {
   const [newsError, setNewsError] = useState(null)
   const [fetchProgress, setFetchProgress] = useState('')
   const [pendingStudyIds, setPendingStudyIds] = useState(new Set())
+  const [pendingNoteIds, setPendingNoteIds] = useState(new Set())
+  const [noteCreatedIds, setNoteCreatedIds] = useState(new Set())
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -129,9 +145,30 @@ export default function CurrentAffairs() {
     }
   }
 
-  const handleAddAsTask = async (affair) => {
-    const gsPaper = GS_PAPER_MAP[affair.category] || ''
-    await addTask(`[${gsPaper}] Read: ${affair.title}`, todayStr(), 'medium')
+  const handleMakeNote = async (affair) => {
+    if (pendingNoteIds.has(affair.id) || noteCreatedIds.has(affair.id)) return
+    setPendingNoteIds(prev => new Set(prev).add(affair.id))
+    try {
+      const subject = CATEGORY_TO_SUBJECT[affair.category] || 'current'
+      const gsPaper = GS_PAPER_MAP[affair.category] || ''
+      let content = ''
+      if (affair.summary) content += affair.summary + '\n\n'
+      if (affair.source_url) content += `Source: ${affair.source_url}\n\n`
+      content += `Date: ${affair.date}`
+      await addNote({
+        title: affair.title,
+        content,
+        subject,
+        tags: [gsPaper, affair.category, 'Current Affairs'].filter(Boolean),
+      })
+      setNoteCreatedIds(prev => new Set(prev).add(affair.id))
+    } finally {
+      setPendingNoteIds(prev => {
+        const next = new Set(prev)
+        next.delete(affair.id)
+        return next
+      })
+    }
   }
 
   const handleFetchNews = useCallback(async () => {
@@ -817,16 +854,21 @@ export default function CurrentAffairs() {
                         </button>
 
                         <button
-                          onClick={() => handleAddAsTask(affair)}
+                          onClick={() => handleMakeNote(affair)}
+                          disabled={pendingNoteIds.has(affair.id) || noteCreatedIds.has(affair.id)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 4,
                             padding: '5px 10px', fontSize: 12, fontWeight: 500,
-                            border: '1px solid #e2e8f0', borderRadius: 6,
-                            backgroundColor: 'transparent', color: '#475569', cursor: 'pointer',
+                            border: noteCreatedIds.has(affair.id) ? '1px solid #d1fae5' : '1px solid #e2e8f0',
+                            borderRadius: 6,
+                            backgroundColor: noteCreatedIds.has(affair.id) ? '#ecfdf5' : 'transparent',
+                            color: noteCreatedIds.has(affair.id) ? '#059669' : '#475569',
+                            cursor: (pendingNoteIds.has(affair.id) || noteCreatedIds.has(affair.id)) ? 'default' : 'pointer',
+                            opacity: (pendingNoteIds.has(affair.id) || noteCreatedIds.has(affair.id)) ? 0.8 : 1,
                           }}
                         >
                           <CheckSquare size={13} />
-                          Make Note
+                          {pendingNoteIds.has(affair.id) ? 'Creating...' : noteCreatedIds.has(affair.id) ? 'Note Created \u2713' : 'Make Note'}
                         </button>
 
                         <button
