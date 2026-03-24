@@ -9,13 +9,14 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner'
 
 // ─── Constants ───
-const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science', 'BPSSC SI Mains', 'SSC CGL']
+const PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science', 'BPSSC SI Mains', 'SSC CGL', 'BPSC TRE 4.0 CS']
 
 // Group papers under exams for display
 const EXAM_GROUPS = [
   { key: 'UPSC / State PSC', papers: ['GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Prelims', 'Science'], color: '#6366f1', desc: 'UPSC CSE, BPSC, UPPSC, MPSC & other State PSCs' },
   { key: 'Bihar Daroga Mains (BPSSC SI)', papers: ['BPSSC SI Mains'], color: '#78716c', desc: 'Sub-Inspector Mains Examination' },
   { key: 'SSC CGL', papers: ['SSC CGL'], color: '#8b5cf6', desc: 'Staff Selection Commission - Combined Graduate Level' },
+  { key: 'BPSC TRE 4.0 (Computer Science)', papers: ['BPSC TRE 4.0 CS'], color: '#e11d48', desc: 'Bihar Teacher PGT – Computer Science (Classes 11 & 12)' },
 ]
 const DIFFICULTIES = [
   { key: 'easy', label: 'Easy', desc: 'Basics & fundamentals', color: '#22c55e', bg: '#f0fdf4' },
@@ -23,7 +24,7 @@ const DIFFICULTIES = [
   { key: 'hard', label: 'Hard', desc: 'Advanced & tricky', color: '#ef4444', bg: '#fef2f2' },
 ]
 const COUNTS = [10, 15, 20, 30, 50]
-const EXAMS = ['All', 'UPSC Prelims', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL']
+const EXAMS = ['All', 'UPSC Prelims', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL', 'BPSC TRE']
 const YEARS = ['', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016']
 const TABS = [
   { key: 'series', label: 'Test Series', icon: Layers },
@@ -41,6 +42,7 @@ const PAPER_META = {
   'Science': { title: 'Science Series', desc: 'Physics, Chemistry, Biology', color: '#8b5cf6', bg: '#f5f3ff', duration: 90, questions: 50, marks: 200 },
   'BPSSC SI Mains': { title: 'Bihar Daroga Mains', desc: 'BPSSC SI Mains Subjects', color: '#78716c', bg: '#f5f5f4', duration: 120, questions: 100, marks: 200 },
   'SSC CGL': { title: 'SSC CGL', desc: 'Combined Graduate Level Exam', color: '#8b5cf6', bg: '#f5f3ff', duration: 60, questions: 100, marks: 200 },
+  'BPSC TRE 4.0 CS': { title: 'BPSC TRE 4.0 CS', desc: 'PGT Computer Science (Language + GS + CS)', color: '#e11d48', bg: '#fff1f2', duration: 150, questions: 150, marks: 150 },
 }
 
 const PYQ_EXAMS = [
@@ -50,6 +52,7 @@ const PYQ_EXAMS = [
   { key: 'UPPSC', label: 'UPPSC', color: '#0ea5e9', paper: 'Prelims' },
   { key: 'MPSC', label: 'MPSC', color: '#14b8a6', paper: 'Prelims' },
   { key: 'SSC CGL', label: 'SSC CGL', color: '#8b5cf6', paper: 'Prelims' },
+  { key: 'BPSC TRE', label: 'BPSC TRE', color: '#e11d48', paper: 'BPSC TRE 4.0 CS' },
 ]
 
 // ─── Color System ───

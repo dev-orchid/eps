@@ -26,7 +26,7 @@ const GS_PAPERS = [
 ]
 
 const SUPPORTED_EXAMS = [
-  'UPSC CSE', 'BPSC', 'UPPSC', 'MPSC', 'WBPSC', 'RPSC', 'KPSC', 'BPSSC SI',
+  'UPSC CSE', 'BPSC', 'UPPSC', 'MPSC', 'WBPSC', 'RPSC', 'KPSC', 'BPSSC SI', 'BPSC TRE 4.0',
 ]
 
 const CORE_FEATURES = [
