@@ -214,6 +214,7 @@ export default function QuestionBank() {
         'BPSSC': 'BPSSC SI Mains',
         'SSC CGL': 'SSC CGL',
         'SSC': 'SSC CGL',
+        'BPSC TRE': 'BPSC TRE 4.0 CS',
       }
       const insertData = parsed.map(q => {
         let subjectId = q.subject_id || null
@@ -361,6 +362,7 @@ Generate real exam-quality questions with authentic ${examName} patterns. Includ
                     const examPaperMap = {
                       'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
                       'SSC CGL': 'SSC CGL',
+                      'BPSC TRE': 'BPSC TRE 4.0 CS',
                     }
                     const paperFilter = examPaperMap[genConfig.pyq_exam]
                     const filtered = paperFilter ? subjects.filter(s => s.paper === paperFilter) : subjects
@@ -391,7 +393,7 @@ Generate real exam-quality questions with authentic ${examName} patterns. Includ
               <div>
                 <label style={labelStyle}>Exam</label>
                 <select value={genConfig.pyq_exam} onChange={e => setGenConfig({ ...genConfig, pyq_exam: e.target.value })} style={inputStyle}>
-                  {['UPSC Prelims', 'UPSC Mains', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL'].map(e => (
+                  {['UPSC Prelims', 'UPSC Mains', 'BPSC', 'Bihar Daroga Mains (BPSSC SI)', 'UPPSC', 'MPSC', 'RPSC', 'WBPSC', 'SSC CGL', 'BPSC TRE'].map(e => (
                     <option key={e} value={e}>{e}</option>
                   ))}
                 </select>
