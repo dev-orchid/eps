@@ -207,6 +207,29 @@ export default function QuestionBank() {
         return
       }
 
+      // Validate: detect statement-type questions with missing statements
+      const statementPattern = /consider the following|which of the following statements|which of the above/i
+      const hasStatementRefs = /\(I\)|\(II\)|\(III\)|\(IV\)|\(V\)|statement[s]?\s*(1|2|3|I|II)/i
+      const warnings = []
+      parsed.forEach((q, i) => {
+        const qt = q.question_text || ''
+        const opts = [q.option_a, q.option_b, q.option_c, q.option_d].join(' ')
+        // Options reference statements (I), (II) etc. but question_text doesn't contain them
+        if (hasStatementRefs.test(opts) && !hasStatementRefs.test(qt)) {
+          warnings.push(`Q${i + 1}: Options reference statements (I/II/III) but the question text doesn't include them`)
+        }
+        // Question says "consider the following statements" but has no numbered items
+        if (statementPattern.test(qt) && !/\n/.test(qt.trim())) {
+          warnings.push(`Q${i + 1}: "${qt.slice(0, 60)}..." looks like a statement-based question but has no listed statements`)
+        }
+      })
+
+      if (warnings.length > 0) {
+        setMsg({ type: 'error', text: `Found ${warnings.length} incomplete question(s):\n${warnings.join('\n')}\n\nPlease fix the question text to include all statements before importing.` })
+        setSaving(false)
+        return
+      }
+
       // Map subject names to IDs (use exam name to disambiguate duplicates)
       const examPaperMap = {
         'Bihar Daroga Mains (BPSSC SI)': 'BPSSC SI Mains',
@@ -334,7 +357,17 @@ Difficulty: ${genConfig.difficulty}
 Exam: ${examName}${genConfig.pyq_year ? `\nYear: ${genConfig.pyq_year}` : ''}
 ---
 
-Generate real exam-quality questions with authentic ${examName} patterns. Include statement-based, match-the-following, and negative framing patterns. Each explanation must cite specific facts.`
+Generate real exam-quality questions with authentic ${examName} patterns. Include statement-based, match-the-following, and negative framing patterns. Each explanation must cite specific facts.
+
+IMPORTANT: For statement-based questions ("Consider the following statements"), the Q: field MUST include ALL numbered statements as separate lines within the question text. Example:
+Q: Consider the following statements about XYZ:
+(I) First statement here.
+(II) Second statement here.
+(III) Third statement here.
+Which of the above statements is/are correct?
+A: (I) and (II) only
+...
+Never put the statements only in the options — they must be in the question text itself.`
 
         return (
           <div style={{
@@ -451,9 +484,9 @@ Generate real exam-quality questions with authentic ${examName} patterns. Includ
           background: msg.type === 'success' ? C.greenLight : C.redLight,
           color: msg.type === 'success' ? C.green : C.red,
           border: `1px solid ${msg.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-          display: 'flex', alignItems: 'center', gap: 6,
+          display: 'flex', alignItems: 'flex-start', gap: 6, whiteSpace: 'pre-line',
         }}>
-          {msg.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+          {msg.type === 'success' ? <Check size={16} style={{ flexShrink: 0, marginTop: 2 }} /> : <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />}
           {msg.text}
         </div>
       )}
